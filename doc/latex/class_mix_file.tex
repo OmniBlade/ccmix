@@ -1,0 +1,189 @@
+\hypertarget{class_mix_file}{
+\section{MixFile Class Reference}
+\label{class_mix_file}\index{MixFile@{MixFile}}
+}
+
+
+mix file controller  
+
+
+
+
+{\ttfamily \#include $<$mix\_\-file.h$>$}
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{class_mix_file_ac88416ea295349a8c834011520359599}{
+{\bfseries MixFile} (const \hyperlink{class_mix_file}{MixFile} \&orig)}
+\label{class_mix_file_ac88416ea295349a8c834011520359599}
+
+\item 
+bool \hyperlink{class_mix_file_a34cecccdab75e6533ed3cec0aaa1eae1}{open} (const std::string path)
+\begin{DoxyCompactList}\small\item\em open mix archive \end{DoxyCompactList}\item 
+bool \hyperlink{class_mix_file_a458c3723fe0f985a61e2063568f872fb}{extractFile} (unsigned int fileID, std::string outPath)
+\begin{DoxyCompactList}\small\item\em extract file from mix archive \end{DoxyCompactList}\item 
+bool \hyperlink{class_mix_file_a05fa448bc3507d58b85cfa3831c2f3b2}{extractFile} (std::string fileName, std::string outPath)
+\begin{DoxyCompactList}\small\item\em extract file from mix archive \end{DoxyCompactList}\item 
+bool \hyperlink{class_mix_file_aa3c889a76f66b8508d38d63ccba3412b}{checkFileName} (std::string fname)
+\begin{DoxyCompactList}\small\item\em chcecks, if file is present in the archive \end{DoxyCompactList}\item 
+void \hyperlink{class_mix_file_a0bc648cc742736c22513d394946e75fe}{printFileList} (int flags)
+\begin{DoxyCompactList}\small\item\em prints mix archive header \end{DoxyCompactList}\item 
+unsigned int \hyperlink{class_mix_file_acf262bbfb22ab6b71f07626549105017}{get\_\-id} (t\_\-game game, std::string name)
+\begin{DoxyCompactList}\small\item\em count CRC ID from filename \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+mix file controller 
+
+\subsection{Member Function Documentation}
+\hypertarget{class_mix_file_aa3c889a76f66b8508d38d63ccba3412b}{
+\index{MixFile@{MixFile}!checkFileName@{checkFileName}}
+\index{checkFileName@{checkFileName}!MixFile@{MixFile}}
+\subsubsection[{checkFileName}]{\setlength{\rightskip}{0pt plus 5cm}bool MixFile::checkFileName (
+\begin{DoxyParamCaption}
+\item[{std::string}]{fname}
+\end{DoxyParamCaption}
+)}}
+\label{class_mix_file_aa3c889a76f66b8508d38d63ccba3412b}
+
+
+chcecks, if file is present in the archive 
+
+
+\begin{DoxyParams}{Parameters}
+{\em fname} & file name \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if present 
+\end{DoxyReturn}
+\hypertarget{class_mix_file_a458c3723fe0f985a61e2063568f872fb}{
+\index{MixFile@{MixFile}!extractFile@{extractFile}}
+\index{extractFile@{extractFile}!MixFile@{MixFile}}
+\subsubsection[{extractFile}]{\setlength{\rightskip}{0pt plus 5cm}bool MixFile::extractFile (
+\begin{DoxyParamCaption}
+\item[{unsigned int}]{fileID, }
+\item[{std::string}]{outPath}
+\end{DoxyParamCaption}
+)}}
+\label{class_mix_file_a458c3723fe0f985a61e2063568f872fb}
+
+
+extract file from mix archive 
+
+
+\begin{DoxyParams}{Parameters}
+{\em fileID} & CRC ID of file \\
+\hline
+{\em outPath} & extracted file path \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em true} & file extracted \\
+\hline
+{\em false} & file not present in the archive \\
+\hline
+\end{DoxyRetVals}
+\hypertarget{class_mix_file_a05fa448bc3507d58b85cfa3831c2f3b2}{
+\index{MixFile@{MixFile}!extractFile@{extractFile}}
+\index{extractFile@{extractFile}!MixFile@{MixFile}}
+\subsubsection[{extractFile}]{\setlength{\rightskip}{0pt plus 5cm}bool MixFile::extractFile (
+\begin{DoxyParamCaption}
+\item[{std::string}]{fileName, }
+\item[{std::string}]{outPath}
+\end{DoxyParamCaption}
+)}}
+\label{class_mix_file_a05fa448bc3507d58b85cfa3831c2f3b2}
+
+
+extract file from mix archive 
+
+
+\begin{DoxyParams}{Parameters}
+{\em fileName} & name of file \\
+\hline
+{\em outPath} & extracted file path \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em true} & file extracted \\
+\hline
+{\em false} & file not present in the archive \\
+\hline
+\end{DoxyRetVals}
+\hypertarget{class_mix_file_acf262bbfb22ab6b71f07626549105017}{
+\index{MixFile@{MixFile}!get\_\-id@{get\_\-id}}
+\index{get\_\-id@{get\_\-id}!MixFile@{MixFile}}
+\subsubsection[{get\_\-id}]{\setlength{\rightskip}{0pt plus 5cm}unsigned int MixFile::get\_\-id (
+\begin{DoxyParamCaption}
+\item[{t\_\-game}]{game, }
+\item[{std::string}]{name}
+\end{DoxyParamCaption}
+)}}
+\label{class_mix_file_acf262bbfb22ab6b71f07626549105017}
+
+
+count CRC ID from filename 
+
+
+\begin{DoxyParams}{Parameters}
+{\em game} & t\_\-game game selection \\
+\hline
+{\em name} & filename \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+CRC ID of file 
+\end{DoxyReturn}
+\hypertarget{class_mix_file_a34cecccdab75e6533ed3cec0aaa1eae1}{
+\index{MixFile@{MixFile}!open@{open}}
+\index{open@{open}!MixFile@{MixFile}}
+\subsubsection[{open}]{\setlength{\rightskip}{0pt plus 5cm}bool MixFile::open (
+\begin{DoxyParamCaption}
+\item[{const std::string}]{path}
+\end{DoxyParamCaption}
+)}}
+\label{class_mix_file_a34cecccdab75e6533ed3cec0aaa1eae1}
+
+
+open mix archive 
+
+
+\begin{DoxyParams}{Parameters}
+{\em path} & mix file path \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em true} & file opened \\
+\hline
+{\em false} & file not found \\
+\hline
+\end{DoxyRetVals}
+\hypertarget{class_mix_file_a0bc648cc742736c22513d394946e75fe}{
+\index{MixFile@{MixFile}!printFileList@{printFileList}}
+\index{printFileList@{printFileList}!MixFile@{MixFile}}
+\subsubsection[{printFileList}]{\setlength{\rightskip}{0pt plus 5cm}void MixFile::printFileList (
+\begin{DoxyParamCaption}
+\item[{int}]{flags = {\ttfamily 1}}
+\end{DoxyParamCaption}
+)}}
+\label{class_mix_file_a0bc648cc742736c22513d394946e75fe}
+
+
+prints mix archive header 
+
+Flags not implemented yet. Prints header in following format: file CRC (hex) $|$$|$ file offset (dec) $|$$|$ file size (dec) 
+\begin{DoxyParams}{Parameters}
+{\em flags} & print settings (not implemented yet) \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following files:\begin{DoxyCompactItemize}
+\item 
+src/mix\_\-file.h\item 
+src/mix\_\-file.cpp\end{DoxyCompactItemize}
