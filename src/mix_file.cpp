@@ -96,6 +96,7 @@ bool MixFile::open(const std::string path) {
             fh.read((char*) enc_header, 8);
             blfish.decipher((void *) enc_header, (void *) enc_header, 8);
             t_mix_header_copy(&mix_head, (char *) enc_header);
+            /* encrypted block has 8b, but header only 6b => 2b is part of first index entry */
             memcpy(decrypt_buffer, (char*) (&enc_header) + 6, 2);
             decrypt_size = 2;
             //cout << "Encrypted number of files: " << dec << mix_head.c_files << endl;
@@ -111,8 +112,6 @@ bool MixFile::open(const std::string path) {
         }
 
     }
-    //cout << "Number of Files: " << mix_head.c_files << endl;
-    //cout << mix_head.size << endl;
     return true;
 }
 
@@ -220,7 +219,7 @@ void MixFile::readIndex(unsigned int * mixdb_offset, unsigned int * mixdb_size) 
 
 bool MixFile::extractFile(unsigned int fileID, std::string outPath) {
     ofstream oFile;
-    unsigned int f_offset = 0, f_size = 0;
+    unsigned int f_offset = -1, f_size = 0;
     char * buffer;
 
     // find file index entry
@@ -230,7 +229,7 @@ bool MixFile::extractFile(unsigned int fileID, std::string outPath) {
             f_size = files[i].size;
         }
     }
-    if (!f_offset)
+    if (f_offset < 0)
         return false;
 
     buffer = new char[f_size];
