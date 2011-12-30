@@ -24,8 +24,6 @@ void t_mix_header_copy(t_mix_header* header, char * data) {
 
 MixFile::MixFile() {
     this->dataoffset = 0;
-
-    // load global db
     globaldb = new MixData("global mix database.dat");
 }
 
@@ -124,6 +122,9 @@ void MixFile::get_files() {
     t_mix_index_entry fheader;
     //cout << setw(16) << setfill(' ') << " ID" << " | OFFSET \t| SIZE" << endl;
 
+    if(!fh.is_open())
+        return;
+    
     if (m_is_encrypted) {
         dataoffset += 80;
         readIndex(&mixdb_offset, &mixdb_size);
