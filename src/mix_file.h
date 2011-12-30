@@ -14,7 +14,9 @@
 
 
 
-
+/**
+ * @brief header
+ */
 union t_mix_header
 {
 	struct
@@ -44,27 +46,69 @@ const int mix_checksum = 0x00010000;
 const int mix_encrypted = 0x00020000;
 
 
-
-class mix_file {
+/**
+ * @brief mix file controller
+ */
+class MixFile {
 public:
-    mix_file();
-    mix_file(const mix_file& orig);
-    virtual ~mix_file();
-    
+    MixFile();
+    MixFile(const MixFile& orig);
+    virtual ~MixFile();
+    /**
+     * @brief open mix archive
+     * @param path mix file path
+     * @retval true file opened
+     * @retval false file not found
+     */
     bool open(const std::string path);
+    /**
+     * @brief extract file from mix archive
+     * @param fileID CRC ID of file
+     * @param outPath extracted file path
+     * @retval true file extracted
+     * @retval false file not present in the archive 
+     */
     bool extractFile(unsigned int fileID, std::string outPath);
+    /**
+     * @brief extract file from mix archive
+     * @param fileName name of file
+     * @param outPath extracted file path
+     * @retval true file extracted
+     * @retval false file not present in the archive 
+     */
     bool extractFile(std::string fileName, std::string outPath);
+    /**
+     * @brief chcecks, if file is present in the archive
+     * @param fname file name
+     * @return true if present
+     */
     bool checkFileName(std::string fname);
+    /**
+     * @brief prints mix archive header
+     * 
+     * Flags not implemented yet. Prints header in following format:
+     * file CRC (hex) || file offset (dec) || file size (dec)
+     * @param flags print settings (not implemented yet)
+     */
     void printFileList(int flags);
+    /**
+     * @brief count CRC ID from filename
+     * @param game t_game game selection
+     * @param name filename
+     * @return  CRC ID of file
+     */
     unsigned int get_id(t_game game, std::string name);
 private:
     void get_files();
     void readIndex(unsigned int * mixdb_offset, unsigned int * mixdb_size);
-    t_mix_header mix_head;
-    std::vector<t_mix_index_entry> files;
+    t_mix_header mix_head; // mix file header
+    std::vector<t_mix_index_entry> files; // list of file headers
+    std::vector<std::string> filenames; // file names
     bool m_is_encrypted;
     bool m_has_checksum;
-    MixData * mixdb;
+    bool has_local_mixdb;
+    MixData * mixdb; // local mix database.dat
+    MixData * globaldb; // global filenames database
     int dataoffset;
     std::ifstream fh; // file handler
     char key_source[80];

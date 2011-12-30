@@ -16,13 +16,14 @@
 class MixData {
 public:
     MixData(std::ifstream * fh, unsigned int offset, unsigned int size);
+    MixData(std::string filePath);
     MixData(const MixData& orig);
     virtual ~MixData();
     
     std::vector<std::string> getFileNames(){ return filename; }
 private:
     char * data;
-    int size;
+    int dsize;
     std::vector<std::string> filename;
 };
 
