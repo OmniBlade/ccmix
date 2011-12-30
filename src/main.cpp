@@ -29,9 +29,8 @@ int main(int argc, char** argv) {
     } else {
         if (!strcmp(argv[2], "list")) {
             mix.printFileList(1);
-        } else if (!strcmp(argv[2], "extid")) {
-            //mix.extractFile();
-        } else if (!strcmp(argv[2], "extract")) {
+        } else if (!strcmp(argv[2], "extract") || !strcmp(argv[2], "extid") || !strcmp(argv[2], "extid16")) {
+
             if (argc < 4) {
                 cout << "Usage \"tsunmix <filename.mix> extract <file>\"." << endl;
             } else {
@@ -39,17 +38,27 @@ int main(int argc, char** argv) {
                 for (int i = 3; i < argc; i++) {
                     oPath.clear();
                     iFile = argv[i];
-                    if (argc > (i+2)) {
-                        if (!strcmp(argv[i+1], "-o")) {
-                            oPath = argv[i+2];
+                    if (argc > (i + 2)) {
+                        if (!strcmp(argv[i + 1], "-o")) {
+                            oPath = argv[i + 2];
                         }
                     }
-                    if(oPath.empty())
+                    if (oPath.empty())
                         oPath = argv[i];
                     else
                         i += 2;
-                    if (!mix.extractFile(iFile.c_str(), oPath.c_str())) {
-                        cout << "File \"" << iFile.c_str() << "\" not found in the archive." << endl;
+                    if (!strcmp(argv[2], "extid")) {
+                        if (!mix.extractFile(strtol(iFile.c_str(), NULL, 10), oPath.c_str())) {
+                            cout << "File \"" << iFile.c_str() << "\" not found in the archive." << endl;
+                        }
+                    } if (!strcmp(argv[2], "extid16")) {
+                        if (!mix.extractFile(strtol(iFile.c_str(), NULL, 16), oPath.c_str())) {
+                            cout << "File \"" << iFile.c_str() << "\" not found in the archive." << endl;
+                        }
+                    } else {
+                        if (!mix.extractFile(iFile.c_str(), oPath.c_str())) {
+                            cout << "File \"" << iFile.c_str() << "\" not found in the archive." << endl;
+                        }
                     }
                 }
             }

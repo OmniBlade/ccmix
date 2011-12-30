@@ -190,16 +190,6 @@ void MixFile::readIndex(unsigned int * mixdb_offset, unsigned int * mixdb_size) 
         blfish.decipher((void *) &encBuff, (void *) &encBuff, 8);
         memcpy(encIndex + decrypt_size + 8 * i, (char *) &encBuff, 8);
     }
-    /*
-        for (int i = 0; i < (blockCnt * 8 + decrypt_size); i++) {
-            cout << hex << " " << setfill('0') << setw(2) << (unsigned short int) ((unsigned char *) encIndex)[i];
-            if (!((i + 1) % 12))
-                cout << endl;
-            else if (!((i + 1) % 4))
-                cout << " |";
-        }
-        cout << endl;
-     */
     dataoffset += blockCnt * 8 + decrypt_size;
 
     for (int i = 0; i < mix_head.c_files; i++) {
@@ -219,17 +209,20 @@ void MixFile::readIndex(unsigned int * mixdb_offset, unsigned int * mixdb_size) 
 
 bool MixFile::extractFile(unsigned int fileID, std::string outPath) {
     ofstream oFile;
-    unsigned int f_offset = -1, f_size = 0;
+    unsigned int f_offset = 0, f_size = 0;
     char * buffer;
-
+    bool found = false;
+ 
+    
     // find file index entry
     for (int i = 0; i < files.size(); i++) {
         if (files[i].id == fileID) {
             f_offset = files[i].offset;
             f_size = files[i].size;
+            found = true;
         }
     }
-    if (f_offset < 0)
+    if (!found)
         return false;
 
     buffer = new char[f_size];
