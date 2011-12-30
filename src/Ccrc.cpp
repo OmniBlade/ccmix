@@ -1,6 +1,6 @@
 /* 
  * File:   Ccrc.cpp
- * Author: ivosh-l
+ * Author: Olaf van der Spek
  * 
  * Created on 29. prosinec 2011, 14:22
  */

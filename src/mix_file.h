@@ -48,6 +48,9 @@ const int mix_encrypted = 0x00020000;
 
 /**
  * @brief mix file controller
+ * 
+ * Some parts of code and code are taken from XCC mix file specification.
+ * @sa TS mix file format specification (http://xhp.xwis.net/documents/MIX_Format.html)
  */
 class MixFile {
 public:
