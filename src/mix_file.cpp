@@ -24,6 +24,7 @@ void t_mix_header_copy(t_mix_header* header, char * data) {
 
 MixFile::MixFile() {
     this->dataoffset = 0;
+    mixdb = NULL;
     globaldb = new MixData("global mix database.dat");
 }
 
@@ -34,7 +35,7 @@ MixFile::~MixFile() {
     fh.close();
 }
 
-unsigned int MixFile::get_id(t_game game, string name) {
+unsigned int MixFile::getID(t_game game, string name) {
     transform(name.begin(), name.end(), name.begin(),
             (int(*)(int)) std::toupper); // convert to uppercase
     if (game != game_ts) { // for TD and RA
@@ -81,9 +82,8 @@ bool MixFile::open(const std::string path) {
         dataoffset += 4;
         m_has_checksum = mix_head.flags & mix_checksum;
         m_is_encrypted = mix_head.flags & mix_encrypted;
-        //cout << "Checksum: " << m_has_checksum << " Encrypted: " << m_is_encrypted << " " << sizeof (mix_head) << endl;
         if (m_is_encrypted) {
-            //cout << "It's encrypted." << endl;
+
             /* read key_source */
             fh.seekg(4);
             fh.read(key_source, 80);
@@ -91,97 +91,75 @@ bool MixFile::open(const std::string path) {
             Cblowfish blfish;
             byte enc_header[8];
             blfish.set_key((byte *) key, 56);
+
             /* read encrypted header */
             fh.seekg(84);
             fh.read((char*) enc_header, 8);
             blfish.decipher((void *) enc_header, (void *) enc_header, 8);
             t_mix_header_copy(&mix_head, (char *) enc_header);
+
             /* encrypted block has 8b, but header only 6b => 2b is part of first index entry */
             memcpy(decrypt_buffer, (char*) (&enc_header) + 6, 2);
             decrypt_size = 2;
-            //cout << "Encrypted number of files: " << dec << mix_head.c_files << endl;
-            //cout << "Encrypted size of all files: " << dec << mix_head.size << endl;
 
 
-            get_files();
-            // to be done
+            readEncryptedHeader();
         } else {
             fh.seekg(4);
             fh.read((char*) &mix_head, 6);
-            get_files();
+            readHeader();
         }
 
     }
     return true;
 }
 
-void MixFile::get_files() {
+bool MixFile::readHeader() {
     int i;
-    unsigned int mixdb_offset = 0, mixdb_size = 0;
     t_mix_index_entry fheader;
-    //cout << setw(16) << setfill(' ') << " ID" << " | OFFSET \t| SIZE" << endl;
 
-    if(!fh.is_open())
-        return;
-    
-    if (m_is_encrypted) {
-        dataoffset += 80;
-        readIndex(&mixdb_offset, &mixdb_size);
-    } else {
-        for (i = 0; i < mix_head.c_files; i++) {
-            fh.read((char*) &fheader, sizeof (fheader));
-            dataoffset += sizeof (fheader);
-            //cout << setw(16) << setfill(' ') << hex << fheader.id << " | " << dec << fheader.offset << "\t\t| " << fheader.size << endl;
-            files.push_back(fheader);
+    if (!fh.is_open())
+        return false;
 
-            if (fheader.id == 0x366e051f) { // local mix database.dat
-                mixdb_offset = fheader.offset;
-                mixdb_size = fheader.size;
-            }
+    if (m_is_encrypted)
+        return readEncryptedHeader();
+
+
+    for (i = 0; i < mix_head.c_files; i++) {
+        fh.read((char*) &fheader, sizeof (fheader));
+        dataoffset += sizeof (fheader);
+        files.push_back(fheader);
+
+        if (fheader.id == 0x366e051f) { // local mix database.dat
+            mixdb = new MixData(&fh, fheader.offset + dataoffset, fheader.size);
         }
     }
 
-    if (mixdb_size) {
-        mixdb = new MixData(&fh, mixdb_offset + dataoffset, mixdb_size);
-        has_local_mixdb = true;
-    } else
-        has_local_mixdb = false;
+    return true;
 
-
-
-
-    //fh.read(ecache, 256);
-    //cout << "ECACHE37.MIX: " << hex << get_id(game_ts, "ECACHE37.MIX") << endl;
 }
 
-bool MixFile::checkFileName(string fname) {
-    transform(fname.begin(), fname.end(), fname.begin(),
-            (int(*)(int)) std::toupper);
-    unsigned int fileID = get_id(game_ts, fname);
-    for (int i = 0; i < files.size(); i++) {
-        if (files[i].id == fileID)
-            return true;
-    }
-    return false;
-}
-
-void MixFile::readIndex(unsigned int * mixdb_offset, unsigned int * mixdb_size) {
+bool MixFile::readEncryptedHeader() {
     int indexSize;
     int blockCnt;
-
-    indexSize = mix_head.c_files * 12;
-    blockCnt = (indexSize - decrypt_size) / 8;
     byte encBuff[8];
     Cblowfish blfish;
     char * encIndex;
     t_mix_index_entry fheader;
+
+    if (!fh.is_open())
+        return false;
+
+    dataoffset += 80;
+
+    indexSize = mix_head.c_files * 12;
+    blockCnt = (indexSize - decrypt_size) / 8;
 
     if ((indexSize - decrypt_size) % 8)
         blockCnt++;
 
     encIndex = new char[blockCnt * 8 + decrypt_size];
     memcpy(encIndex, decrypt_buffer, decrypt_size);
-    //fh.read(encIndex + decrypt_size, blockCnt * 8);
 
     blfish.set_key((byte *) key, 56);
 
@@ -194,17 +172,87 @@ void MixFile::readIndex(unsigned int * mixdb_offset, unsigned int * mixdb_size) 
 
     for (int i = 0; i < mix_head.c_files; i++) {
         memcpy((char *) &fheader, encIndex + i * 12, 12);
-        //cout << setw(16) << setfill(' ') << hex << fheader.id << " | " << dec << fheader.offset << "\t\t| " << fheader.size << endl;
         files.push_back(fheader);
 
         if (fheader.id == 0x366e051f) { // local mix database.dat
-            *mixdb_offset = fheader.offset;
-            *mixdb_size = fheader.size;
+            mixdb = new MixData(&fh, fheader.offset + dataoffset, fheader.size);
         }
 
     }
 
-    //cout << "file offset: " << dec << dataoffset << endl;
+    return true;
+
+}
+
+bool MixFile::checkFileName(string fname) {
+    transform(fname.begin(), fname.end(), fname.begin(),
+            (int(*)(int)) std::toupper);
+    unsigned int fileID = getID(game_ts, fname);
+    for (int i = 0; i < files.size(); i++) {
+        if (files[i].id == fileID)
+            return true;
+    }
+    return false;
+}
+
+bool MixFile::extractAll(std::string outPath, bool withFileNames) {
+    int i;
+
+    vector<string> filenamesdb;
+    vector<string> filenamesdb_local;
+
+    char buffer[16];
+
+    if (!withFileNames)
+        return extractAllFast(outPath);
+
+
+    // get filenames
+    filenamesdb = globaldb->getFileNames();
+    if (mixdb)
+        filenamesdb_local = mixdb->getFileNames();
+
+    for (i = 0; i < mix_head.c_files; i++) {
+        bool found = false;
+        for (int j = 0; j < filenamesdb.size(); j++) {
+            if (getID(game_ts, filenamesdb[j]) == files[i].id) {
+                //cout << "filename found: " << filenamesdb[j] << ";" << endl;
+                extractFile(files[i].id, outPath + "/" + filenamesdb[j]);
+                found = true;
+                break;
+            }
+        }
+        if (mixdb && !found) {
+            for (int j = 0; j < filenamesdb_local.size(); j++) {
+                if (getID(game_ts, filenamesdb_local[j]) == files[i].id) {
+                    //cout << "filename found: " << filenamesdb[j] << ";" << endl;
+                    extractFile(files[i].id, outPath + "/" + filenamesdb_local[j]);
+                    found = true;
+                    break;
+                }
+
+            }
+        }
+        if (!found) {
+            sprintf(buffer, "%x", files[i].id);
+            extractFile(files[i].id, outPath + "/unknown_" + string(buffer));
+        }
+
+    }
+
+
+    return true;
+}
+
+bool MixFile::extractAllFast(std::string outPath) {
+    int i;
+    char buffer[16];
+
+    for (i = 0; i < mix_head.c_files; i++) {
+        sprintf(buffer, "%x", files[i].id);
+        extractFile(files[i].id, outPath + "/unknown_" + string(buffer));
+    }
+    return true;
 }
 
 bool MixFile::extractFile(unsigned int fileID, std::string outPath) {
@@ -212,8 +260,8 @@ bool MixFile::extractFile(unsigned int fileID, std::string outPath) {
     unsigned int f_offset = 0, f_size = 0;
     char * buffer;
     bool found = false;
- 
-    
+
+
     // find file index entry
     for (int i = 0; i < files.size(); i++) {
         if (files[i].id == fileID) {
@@ -239,7 +287,7 @@ bool MixFile::extractFile(unsigned int fileID, std::string outPath) {
 }
 
 bool MixFile::extractFile(std::string fileName, std::string outPath) {
-    return extractFile(get_id(game_ts, fileName), outPath);
+    return extractFile(getID(game_ts, fileName), outPath);
 }
 
 void MixFile::printFileList(int flags = 1) {
@@ -252,22 +300,22 @@ void MixFile::printFileList(int flags = 1) {
     if (flags & 1) {
         // get filenames
         filenamesdb = globaldb->getFileNames();
-        if (has_local_mixdb)
+        if (mixdb)
             filenamesdb_local = mixdb->getFileNames();
 
         for (i = 0; i < mix_head.c_files; i++) {
             bool found = false;
             for (int j = 0; j < filenamesdb.size(); j++) {
-                if (get_id(game_ts, filenamesdb[j]) == files[i].id) {
+                if (getID(game_ts, filenamesdb[j]) == files[i].id) {
                     //cout << "filename found: " << filenamesdb[j] << ";" << endl;
                     filenames.push_back(filenamesdb[j]);
                     found = true;
                     break;
                 }
             }
-            if (has_local_mixdb && !found) {
+            if (mixdb && !found) {
                 for (int j = 0; j < filenamesdb_local.size(); j++) {
-                    if (get_id(game_ts, filenamesdb_local[j]) == files[i].id) {
+                    if (getID(game_ts, filenamesdb_local[j]) == files[i].id) {
                         //cout << "filename found: " << filenamesdb[j] << ";" << endl;
                         filenames.push_back(filenamesdb_local[j]);
                         found = true;

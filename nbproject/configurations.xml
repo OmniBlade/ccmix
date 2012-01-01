@@ -49,6 +49,9 @@
         <compilerSet>default</compilerSet>
       </toolsSet>
       <compileType>
+        <ccTool>
+          <commandLine>-lboost_system -lboost_filesystem</commandLine>
+        </ccTool>
       </compileType>
     </conf>
     <conf name="Release" type="1">

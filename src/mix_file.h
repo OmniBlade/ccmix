@@ -81,6 +81,13 @@ public:
      */
     bool extractFile(std::string fileName, std::string outPath);
     /**
+     * @brief extract all files from the archive
+     * @param outPath output directory
+     * @param withFileNames try to get file names of the content
+     * @return true if extraction successful
+     */
+    bool extractAll(std::string outPath = ".", bool withFileNames = true);
+    /**
      * @brief chcecks, if file is present in the archive
      * @param fname file name
      * @return true if present
@@ -100,16 +107,16 @@ public:
      * @param name filename
      * @return  CRC ID of file
      */
-    unsigned int get_id(t_game game, std::string name);
+    unsigned int getID(t_game game, std::string name);
 private:
-    void get_files();
-    void readIndex(unsigned int * mixdb_offset, unsigned int * mixdb_size);
+    bool readHeader();
+    bool readEncryptedHeader();
+    bool extractAllFast(std::string outPath = ".");
     t_mix_header mix_head; // mix file header
     std::vector<t_mix_index_entry> files; // list of file headers
     std::vector<std::string> filenames; // file names
     bool m_is_encrypted;
     bool m_has_checksum;
-    bool has_local_mixdb;
     MixData * mixdb; // local mix database.dat
     MixData * globaldb; // global filenames database
     int dataoffset;

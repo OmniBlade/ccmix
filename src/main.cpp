@@ -5,19 +5,22 @@
  * Created on 29. prosinec 2011, 11:30
  */
 
+//#include <boost/filesystem.hpp>
+//#include <boost/system/system_error.hpp>
 #include <cstdlib>
 #include "mix_file.h"
 #include <iostream>
 #include <string.h>
 
 using namespace std;
+//using namespace boost::filesystem;
 
 int main(int argc, char** argv) {
     MixFile mix;
     string oPath;
     string iFile;
     if (argc < 2) {
-        cout << "Usage \"tsunmix <filename.mix> [list,extract,getid] {file}\"." << endl;
+        cout << "Usage \"tsunmix <filename.mix> [list,extract,ext3,getid] {file1 {-o file1out} {file2 {-o file2out}} ...}\"." << endl;
         return 0;
     }
     if (!mix.open(argv[1])) {
@@ -51,7 +54,8 @@ int main(int argc, char** argv) {
                         if (!mix.extractFile(strtol(iFile.c_str(), NULL, 10), oPath.c_str())) {
                             cout << "File \"" << iFile.c_str() << "\" not found in the archive." << endl;
                         }
-                    } if (!strcmp(argv[2], "extid16")) {
+                    }
+                    if (!strcmp(argv[2], "extid16")) {
                         if (!mix.extractFile(strtol(iFile.c_str(), NULL, 16), oPath.c_str())) {
                             cout << "File \"" << iFile.c_str() << "\" not found in the archive." << endl;
                         }
@@ -67,8 +71,24 @@ int main(int argc, char** argv) {
                 cout << "Usage \"tsunmix <filename.mix> getid <file>\"." << endl;
 
             } else {
-                cout << argv[3] << " : " << hex << mix.get_id(game_ts, argv[3]) << ((mix.checkFileName(argv[3])) ? "" : " (NOT PRESENT)") << endl;
+                cout << argv[3] << " : " << hex << mix.getID(game_ts, argv[3]) << ((mix.checkFileName(argv[3])) ? "" : " (NOT PRESENT)") << endl;
             }
+        } else if (!strcmp(argv[2], "all")) {
+            if (argc > 4) {
+                if (!strcmp(argv[3], "-o")) {
+                    oPath = argv[4];
+                } else
+                    oPath = ".";
+            } else
+                oPath = ".";
+            //create_directory((const path)argv[0]);
+            if (argc > 5) {
+                if (!strcmp(argv[5], "-f")) {
+                    mix.extractAll(oPath, false);
+                } else
+                    mix.extractAll(oPath);
+            } else
+                mix.extractAll(oPath);
         }
     }
 

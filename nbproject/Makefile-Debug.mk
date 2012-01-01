@@ -46,8 +46,8 @@ OBJECTFILES= \
 CFLAGS=
 
 # CC Compiler Flags
-CCFLAGS=
-CXXFLAGS=
+CCFLAGS=-lboost_system -lboost_filesystem
+CXXFLAGS=-lboost_system -lboost_filesystem
 
 # Fortran Compiler Flags
 FFLAGS=
