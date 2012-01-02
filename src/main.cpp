@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     string oPath;
     string iFile;
     if (argc < 2) {
-        cout << "Usage \"tsunmix <filename.mix> [list,extract,ext3,getid] {file1 {-o file1out} {file2 {-o file2out}} ...}\"." << endl;
+        cout << "Usage \"tsunmix <filename.mix> [list,extract,extid,getid] {file1 {-o file1out} {file2 {-o file2out}} ...}\"." << endl;
         return 0;
     }
     if (!mix.open(argv[1])) {
@@ -33,9 +33,16 @@ int main(int argc, char** argv) {
         if (!strcmp(argv[2], "list")) {
             mix.printFileList(1);
         } else if (!strcmp(argv[2], "extract") || !strcmp(argv[2], "extid") || !strcmp(argv[2], "extid16")) {
-
+            if (!strcmp(argv[2], "extid16")){
+                cout << "Warning: option \"extid16\" is deprecated. Use \"extid\" insted. Use \"0x\" id prefix for hex format." << endl;
+            }
             if (argc < 4) {
+                if (!strcmp(argv[2], "extract"))
                 cout << "Usage \"tsunmix <filename.mix> extract <file>\"." << endl;
+                else if (!strcmp(argv[2], "extid"))
+                    cout << "Usage \"tsunmix <filename.mix> extid <crc id>\". Use \"0x\" id prefix for hex format." << endl;
+                else if (!strcmp(argv[2], "extid16"))
+                    cout << "Usage \"tsunmix <filename.mix> extid16 <hex crc id>\"." << endl;
             } else {
 
                 for (int i = 3; i < argc; i++) {
@@ -51,11 +58,14 @@ int main(int argc, char** argv) {
                     else
                         i += 2;
                     if (!strcmp(argv[2], "extid")) {
-                        if (!mix.extractFile(strtol(iFile.c_str(), NULL, 10), oPath.c_str())) {
+                        if (iFile.length() > 1 && iFile[0] == '0' && iFile[1] == 'x') {
+                            if (!mix.extractFile(strtol(iFile.c_str(), NULL, 16), oPath.c_str())) {
+                                cout << "File \"" << iFile.c_str() << "\" not found in the archive." << endl;
+                            }
+                        } else if (!mix.extractFile(strtol(iFile.c_str(), NULL, 10), oPath.c_str())) {
                             cout << "File \"" << iFile.c_str() << "\" not found in the archive." << endl;
                         }
-                    }
-                    if (!strcmp(argv[2], "extid16")) {
+                    } else if (!strcmp(argv[2], "extid16")) {
                         if (!mix.extractFile(strtol(iFile.c_str(), NULL, 16), oPath.c_str())) {
                             cout << "File \"" << iFile.c_str() << "\" not found in the archive." << endl;
                         }
