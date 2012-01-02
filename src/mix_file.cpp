@@ -71,13 +71,18 @@ unsigned int MixFile::getID(t_game game, string name) {
 }
 
 bool MixFile::open(const std::string path) {
+    if(fh.is_open())
+        fh.close();
+    
     fh.open(path.c_str(), ios::binary);
     if (fh.rdstate() & ifstream::failbit) {
         cout << "Unable to read file!" << endl;
         return false;
     }
+    
     fh.read((char*) &mix_head, sizeof (mix_head));
     dataoffset = 6;
+    
     if (!mix_head.c_files) {
         dataoffset += 4;
         m_has_checksum = mix_head.flags & mix_checksum;
@@ -102,19 +107,18 @@ bool MixFile::open(const std::string path) {
             memcpy(decrypt_buffer, (char*) (&enc_header) + 6, 2);
             decrypt_size = 2;
 
-
-            readEncryptedHeader();
+            readEncryptedIndex();
         } else {
             fh.seekg(4);
             fh.read((char*) &mix_head, 6);
-            readHeader();
+            readIndex();
         }
 
     }
     return true;
 }
 
-bool MixFile::readHeader() {
+bool MixFile::readIndex() {
     int i;
     t_mix_index_entry fheader;
 
@@ -122,7 +126,7 @@ bool MixFile::readHeader() {
         return false;
 
     if (m_is_encrypted)
-        return readEncryptedHeader();
+        return readEncryptedIndex();
 
 
     for (i = 0; i < mix_head.c_files; i++) {
@@ -139,7 +143,7 @@ bool MixFile::readHeader() {
 
 }
 
-bool MixFile::readEncryptedHeader() {
+bool MixFile::readEncryptedIndex() {
     int indexSize;
     int blockCnt;
     byte encBuff[8];
@@ -180,6 +184,7 @@ bool MixFile::readEncryptedHeader() {
 
     }
 
+    delete[] encIndex;
     return true;
 
 }

@@ -162,8 +162,8 @@ public:
     std::vector<std::string> getFileNames();
     std::vector<t_mix_index_entry> getFileIndex(){ return files; };
 private:
-    bool readHeader();
-    bool readEncryptedHeader();
+    bool readIndex();
+    bool readEncryptedIndex();
     bool readFileNames();
     bool extractAllFast(std::string outPath = ".");
     t_mix_header mix_head; // mix file header
