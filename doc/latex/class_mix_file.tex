@@ -25,16 +25,23 @@ bool \hyperlink{class_mix_file_a458c3723fe0f985a61e2063568f872fb}{extractFile} (
 \begin{DoxyCompactList}\small\item\em extract file from mix archive \end{DoxyCompactList}\item 
 bool \hyperlink{class_mix_file_a05fa448bc3507d58b85cfa3831c2f3b2}{extractFile} (std::string fileName, std::string outPath)
 \begin{DoxyCompactList}\small\item\em extract file from mix archive \end{DoxyCompactList}\item 
+bool \hyperlink{class_mix_file_a2016aa142da853224c86ef7aa17ef657}{extractAll} (std::string outPath=\char`\"{}.\char`\"{}, bool withFileNames=true)
+\begin{DoxyCompactList}\small\item\em extract all files from the archive \end{DoxyCompactList}\item 
 bool \hyperlink{class_mix_file_aa3c889a76f66b8508d38d63ccba3412b}{checkFileName} (std::string fname)
 \begin{DoxyCompactList}\small\item\em chcecks, if file is present in the archive \end{DoxyCompactList}\item 
 void \hyperlink{class_mix_file_a0bc648cc742736c22513d394946e75fe}{printFileList} (int flags)
 \begin{DoxyCompactList}\small\item\em prints mix archive header \end{DoxyCompactList}\item 
-unsigned int \hyperlink{class_mix_file_acf262bbfb22ab6b71f07626549105017}{get\_\-id} (t\_\-game game, std::string name)
+unsigned int \hyperlink{class_mix_file_ab93f997c8a613ba0bee8a3d9a28de01b}{getID} (t\_\-game game, std::string name)
 \begin{DoxyCompactList}\small\item\em count CRC ID from filename \end{DoxyCompactList}\end{DoxyCompactItemize}
 
 
 \subsection{Detailed Description}
 mix file controller 
+
+Some parts of code and code are taken from XCC mix file specification. \begin{DoxySeeAlso}{See also}
+TS mix file format specification (\href{http://xhp.xwis.net/documents/MIX_Format.html}{\tt http://xhp.xwis.net/documents/MIX\_\-Format.html}) 
+\end{DoxySeeAlso}
+
 
 \subsection{Member Function Documentation}
 \hypertarget{class_mix_file_aa3c889a76f66b8508d38d63ccba3412b}{
@@ -57,6 +64,30 @@ chcecks, if file is present in the archive
 \end{DoxyParams}
 \begin{DoxyReturn}{Returns}
 true if present 
+\end{DoxyReturn}
+\hypertarget{class_mix_file_a2016aa142da853224c86ef7aa17ef657}{
+\index{MixFile@{MixFile}!extractAll@{extractAll}}
+\index{extractAll@{extractAll}!MixFile@{MixFile}}
+\subsubsection[{extractAll}]{\setlength{\rightskip}{0pt plus 5cm}bool MixFile::extractAll (
+\begin{DoxyParamCaption}
+\item[{std::string}]{outPath = {\ttfamily \char`\"{}.\char`\"{}}, }
+\item[{bool}]{withFileNames = {\ttfamily true}}
+\end{DoxyParamCaption}
+)}}
+\label{class_mix_file_a2016aa142da853224c86ef7aa17ef657}
+
+
+extract all files from the archive 
+
+
+\begin{DoxyParams}{Parameters}
+{\em outPath} & output directory \\
+\hline
+{\em withFileNames} & try to get file names of the content \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if extraction successful 
 \end{DoxyReturn}
 \hypertarget{class_mix_file_a458c3723fe0f985a61e2063568f872fb}{
 \index{MixFile@{MixFile}!extractFile@{extractFile}}
@@ -114,16 +145,16 @@ extract file from mix archive
 {\em false} & file not present in the archive \\
 \hline
 \end{DoxyRetVals}
-\hypertarget{class_mix_file_acf262bbfb22ab6b71f07626549105017}{
-\index{MixFile@{MixFile}!get\_\-id@{get\_\-id}}
-\index{get\_\-id@{get\_\-id}!MixFile@{MixFile}}
-\subsubsection[{get\_\-id}]{\setlength{\rightskip}{0pt plus 5cm}unsigned int MixFile::get\_\-id (
+\hypertarget{class_mix_file_ab93f997c8a613ba0bee8a3d9a28de01b}{
+\index{MixFile@{MixFile}!getID@{getID}}
+\index{getID@{getID}!MixFile@{MixFile}}
+\subsubsection[{getID}]{\setlength{\rightskip}{0pt plus 5cm}unsigned int MixFile::getID (
 \begin{DoxyParamCaption}
 \item[{t\_\-game}]{game, }
 \item[{std::string}]{name}
 \end{DoxyParamCaption}
 )}}
-\label{class_mix_file_acf262bbfb22ab6b71f07626549105017}
+\label{class_mix_file_ab93f997c8a613ba0bee8a3d9a28de01b}
 
 
 count CRC ID from filename 

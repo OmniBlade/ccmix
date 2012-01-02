@@ -21,6 +21,10 @@ You should have received a copy of the <a href="http://www.gnu.org/licenses/gpl.
  *
  *
  * \sa
+ * Project homepage (http://code.google.com/p/tsunmix/)
+ * \sa
+ * Usage Examples (http://code.google.com/p/tsunmix/wiki/UsageExamples)
+ * \sa
  * TS mix file format specification (http://xhp.xwis.net/documents/MIX_Format.html)
  * \sa
  * XCC homepage (http://xhp.xwis.net/)
