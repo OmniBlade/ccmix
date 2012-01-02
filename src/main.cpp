@@ -28,10 +28,10 @@ int main(int argc, char** argv) {
         return 1;
     }
     if (argc < 3) {
-        mix.printFileList(0);
+        cout << mix.printFileList(0);
     } else {
         if (!strcmp(argv[2], "list")) {
-            mix.printFileList(1);
+            cout << mix.printFileList(1);
         } else if (!strcmp(argv[2], "extract") || !strcmp(argv[2], "extid") || !strcmp(argv[2], "extid16")) {
             if (!strcmp(argv[2], "extid16")){
                 cout << "Warning: option \"extid16\" is deprecated. Use \"extid\" insted. Use \"0x\" id prefix for hex format." << endl;

@@ -2,6 +2,15 @@
 \section{t\_\-mix\_\-index\_\-entry Struct Reference}
 \label{structt__mix__index__entry}\index{t\_\-mix\_\-index\_\-entry@{t\_\-mix\_\-index\_\-entry}}
 }
+
+
+Included file header.  
+
+
+
+
+{\ttfamily \#include $<$mix\_\-file.h$>$}
+
 \subsection*{Public Attributes}
 \begin{DoxyCompactItemize}
 \item 
@@ -20,6 +29,30 @@ unsigned int {\bfseries size}}
 \label{structt__mix__index__entry_a6991b2b6361cd9b05b22c16a1b06f612}
 
 \end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Included file header. 
+
+Right after mix file header comes file index. Every included file has it's entry there storing information about it's CRC ID (mix archive doesn't store information about file names, but CRC ID can be calculated from file name), offset in body block and size. Remember that you have to add body offset to file offset before you read a file data.
+
+\begin{DoxyParagraph}{structure of index entry}
+
+\begin{DoxyItemize}
+\item 4B -\/ CRC id
+\item 4B -\/ file offset
+\item 4B -\/ file size
+\end{DoxyItemize}
+\end{DoxyParagraph}
+\begin{DoxyParagraph}{count body offset}
+To get body offset, you have to count size of information before body.
+\begin{DoxyItemize}
+\item does archive contain flags? (4B if so)
+\item mix archive header (6B)
+\item file index (c\_\-files $\ast$ 12B)
+\item is archive encrypted? (80B if so) 
+\end{DoxyItemize}
+\end{DoxyParagraph}
 
 
 The documentation for this struct was generated from the following file:\begin{DoxyCompactItemize}

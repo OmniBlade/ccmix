@@ -86,10 +86,14 @@ Public Member Functions</h2></td></tr>
 <tr><td class="mdescLeft">&#160;</td><td class="mdescRight">extract all files from the archive  <a href="#a2016aa142da853224c86ef7aa17ef657"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_mix_file.html#aa3c889a76f66b8508d38d63ccba3412b">checkFileName</a> (std::string fname)</td></tr>
 <tr><td class="mdescLeft">&#160;</td><td class="mdescRight">chcecks, if file is present in the archive  <a href="#aa3c889a76f66b8508d38d63ccba3412b"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_mix_file.html#a0bc648cc742736c22513d394946e75fe">printFileList</a> (int flags)</td></tr>
-<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">prints mix archive header  <a href="#a0bc648cc742736c22513d394946e75fe"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_mix_file.html#affce142f06eb96c8e677a174b584f08c">printFileList</a> (int flags)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">mix archive header  <a href="#affce142f06eb96c8e677a174b584f08c"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_mix_file.html#ab93f997c8a613ba0bee8a3d9a28de01b">getID</a> (t_game game, std::string name)</td></tr>
 <tr><td class="mdescLeft">&#160;</td><td class="mdescRight">count CRC ID from filename  <a href="#ab93f997c8a613ba0bee8a3d9a28de01b"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad8c1782e1f48f5c376df06775b95ed6c"></a><!-- doxytag: member="MixFile::getFileNames" ref="ad8c1782e1f48f5c376df06775b95ed6c" args="()" -->
+std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getFileNames</b> ()</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ac2dba1a5450c5f16b3364fb369366d67"></a><!-- doxytag: member="MixFile::getFileIndex" ref="ac2dba1a5450c5f16b3364fb369366d67" args="()" -->
+std::vector&lt; <a class="el" href="structt__mix__index__entry.html">t_mix_index_entry</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getFileIndex</b> ()</td></tr>
 </table>
 <hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
 <div class="textblock"><p>mix file controller </p>
@@ -314,12 +318,12 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="a0bc648cc742736c22513d394946e75fe"></a><!-- doxytag: member="MixFile::printFileList" ref="a0bc648cc742736c22513d394946e75fe" args="(int flags)" -->
+<a class="anchor" id="affce142f06eb96c8e677a174b584f08c"></a><!-- doxytag: member="MixFile::printFileList" ref="affce142f06eb96c8e677a174b584f08c" args="(int flags)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void MixFile::printFileList </td>
+          <td class="memname">string MixFile::printFileList </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>flags</em> = <code>1</code></td><td>)</td>
@@ -329,14 +333,15 @@ Public Member Functions</h2></td></tr>
 </div>
 <div class="memdoc">
 
-<p>prints mix archive header </p>
-<p>Flags not implemented yet. Prints header in following format: file CRC (hex) || file offset (dec) || file size (dec) </p>
+<p>mix archive header </p>
+<p>Prints header in following format: file CRC (hex) || file offset (dec) || file size (dec) </p>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table class="params">
-    <tr><td class="paramname">flags</td><td>print settings (not implemented yet) </td></tr>
+    <tr><td class="paramname">flags</td><td>print settings </td></tr>
   </table>
   </dd>
 </dl>
+<dl class="return"><dt><b>Returns:</b></dt><dd>file text list </dd></dl>
 
 </div>
 </div>
@@ -359,7 +364,7 @@ Public Member Functions</h2></td></tr>
 </iframe>
 </div>
 
-<hr class="footer"/><address class="footer"><small>Generated on Mon Jan 2 2012 12:17:55 for TSunmix by&#160;
+<hr class="footer"/><address class="footer"><small>Generated on Mon Jan 2 2012 15:17:13 for TSunmix by&#160;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.4 </small></address>
 </body>

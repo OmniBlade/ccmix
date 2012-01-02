@@ -65,6 +65,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
 <div class="contents">
 <!-- doxytag: class="t_mix_index_entry" -->
+<p>Included file header.  
+ <a href="structt__mix__index__entry.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="mix__file_8h_source.html">mix_file.h</a>&gt;</code></p>
+
 <p><a href="structt__mix__index__entry-members.html">List of all members.</a></p>
 <table class="memberdecls">
 <tr><td colspan="2"><h2><a name="pub-attribs"></a>
@@ -76,7 +81,23 @@ unsigned int&#160;</td><td class="memItemRight" valign="bottom"><b>offset</b></t
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a6991b2b6361cd9b05b22c16a1b06f612"></a><!-- doxytag: member="t_mix_index_entry::size" ref="a6991b2b6361cd9b05b22c16a1b06f612" args="" -->
 unsigned int&#160;</td><td class="memItemRight" valign="bottom"><b>size</b></td></tr>
 </table>
-<hr/>The documentation for this struct was generated from the following file:<ul>
+<hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
+<div class="textblock"><p>Included file header. </p>
+<p>Right after mix file header comes file index. Every included file has it's entry there storing information about it's CRC ID (mix archive doesn't store information about file names, but CRC ID can be calculated from file name), offset in body block and size. Remember that you have to add body offset to file offset before you read a file data.</p>
+<dl class="user"><dt><b>structure of index entry</b></dt><dd><ul>
+<li>4B - CRC id</li>
+<li>4B - file offset</li>
+<li>4B - file size</li>
+</ul>
+</dd></dl>
+<dl class="user"><dt><b>count body offset</b></dt><dd>To get body offset, you have to count size of information before body.<ul>
+<li>does archive contain flags? (4B if so)</li>
+<li>mix archive header (6B)</li>
+<li>file index (c_files * 12B)</li>
+<li>is archive encrypted? (80B if so) </li>
+</ul>
+</dd></dl>
+</div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>src/<a class="el" href="mix__file_8h_source.html">mix_file.h</a></li>
 </ul>
 </div>
@@ -94,7 +115,7 @@ unsigned int&#160;</td><td class="memItemRight" valign="bottom"><b>size</b></td>
 </iframe>
 </div>
 
-<hr class="footer"/><address class="footer"><small>Generated on Mon Jan 2 2012 12:17:55 for TSunmix by&#160;
+<hr class="footer"/><address class="footer"><small>Generated on Mon Jan 2 2012 15:17:13 for TSunmix by&#160;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.4 </small></address>
 </body>

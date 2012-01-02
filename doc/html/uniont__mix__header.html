@@ -65,7 +65,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div>
 <div class="contents">
 <!-- doxytag: class="t_mix_header" -->
-<p>header  
+<p>Mix archive header.  
  <a href="uniont__mix__header.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="mix__file_8h_source.html">mix_file.h</a>&gt;</code></p>
@@ -83,7 +83,24 @@ struct {</td></tr>
 unsigned int&#160;</td><td class="memItemRight" valign="bottom"><b>flags</b></td></tr>
 </table>
 <hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
-<div class="textblock"><p>header </p>
+<div class="textblock"><p>Mix archive header. </p>
+<p>Mix archive starts with archive header storing information about number of files included and their total size. Some archives (RA/TS) starts with 4b flags, which is followed by header.</p>
+<dl class="user"><dt><b>old mix format header</b></dt><dd><ul>
+<li>2B - number of files</li>
+<li>4B - total content's size</li>
+</ul>
+</dd></dl>
+<dl class="user"><dt><b>RA/TS mix format header</b></dt><dd><ul>
+<li>4B - flags</li>
+<li>2B - number of files</li>
+<li>4B - total content's size</li>
+</ul>
+</dd></dl>
+<h2><a class="anchor" id="archivetype"></a>
+determine what type archive is</h2>
+<p>Now here comes part which might be hard to understand. Data are stored in little endian format, which means little ending is stored first and big ending last. Number 0x11223344, where little ending is 44, will be stored like this 44 33 22 11 - bytes are stored in reverse direction as you can see.</p>
+<p>Flags are stored only in LAST 2 bytes, that means if file starts with flags, FIRST 2 bytes are 00 00, and other 2 bytes contains flag. If there are no flags, archive can not start with 00 00, because that would mean it contains no files.</p>
+<p>So we read header no matter what type archive is and check for first two bytes,which are stored in c_files. If c_files == 0, we take first 4 bytes, which are stored in flags as flag information, move file pointer to 4th byte and repeat reading of header (6b). Now c_files contains number of files and size contains size of all files. </p>
 </div><hr/>The documentation for this union was generated from the following file:<ul>
 <li>src/<a class="el" href="mix__file_8h_source.html">mix_file.h</a></li>
 </ul>
@@ -102,7 +119,7 @@ unsigned int&#160;</td><td class="memItemRight" valign="bottom"><b>flags</b></td
 </iframe>
 </div>
 
-<hr class="footer"/><address class="footer"><small>Generated on Mon Jan 2 2012 12:17:55 for TSunmix by&#160;
+<hr class="footer"/><address class="footer"><small>Generated on Mon Jan 2 2012 15:17:13 for TSunmix by&#160;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.4 </small></address>
 </body>

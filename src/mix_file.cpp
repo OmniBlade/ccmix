@@ -290,56 +290,80 @@ bool MixFile::extractFile(std::string fileName, std::string outPath) {
     return extractFile(getID(game_ts, fileName), outPath);
 }
 
-void MixFile::printFileList(int flags = 1) {
+vector<string> MixFile::getFileNames() {
+    if(filenames.empty())
+        readFileNames();
+    
+    return filenames;
+}
+
+bool MixFile::readFileNames() {
     int i;
 
     vector<string> filenamesdb;
     vector<string> filenamesdb_local;
 
+    /* read global and local database of filenames */
+    filenamesdb = globaldb->getFileNames();
+    if (mixdb)
+        filenamesdb_local = mixdb->getFileNames();
 
-    if (flags & 1) {
-        // get filenames
-        filenamesdb = globaldb->getFileNames();
-        if (mixdb)
-            filenamesdb_local = mixdb->getFileNames();
-
-        for (i = 0; i < mix_head.c_files; i++) {
-            bool found = false;
-            for (int j = 0; j < filenamesdb.size(); j++) {
-                if (getID(game_ts, filenamesdb[j]) == files[i].id) {
-                    //cout << "filename found: " << filenamesdb[j] << ";" << endl;
-                    filenames.push_back(filenamesdb[j]);
+    /* clear previous filenames list */
+    filenames.clear();
+    
+    for (i = 0; i < mix_head.c_files; i++) {
+        bool found = false;
+        
+        /* try filenames from global database */
+        for (int j = 0; j < filenamesdb.size(); j++) {
+            if (getID(game_ts, filenamesdb[j]) == files[i].id) {
+                filenames.push_back(filenamesdb[j]);
+                found = true;
+                break;
+            }
+        }
+        
+        /* try filenames from local database */
+        if (mixdb && !found) {
+            for (int j = 0; j < filenamesdb_local.size(); j++) {
+                if (getID(game_ts, filenamesdb_local[j]) == files[i].id) {
+                    filenames.push_back(filenamesdb_local[j]);
                     found = true;
                     break;
                 }
-            }
-            if (mixdb && !found) {
-                for (int j = 0; j < filenamesdb_local.size(); j++) {
-                    if (getID(game_ts, filenamesdb_local[j]) == files[i].id) {
-                        //cout << "filename found: " << filenamesdb[j] << ";" << endl;
-                        filenames.push_back(filenamesdb_local[j]);
-                        found = true;
-                        break;
-                    }
 
-                }
             }
-            if (!found) {
-                filenames.push_back("<unknown>");
-            }
-
+        }
+        
+        /* file does not match filename in any database */
+        if (!found) {
+            filenames.push_back("<unknown>");
         }
 
-        cout << setw(35) << setfill(' ') << "FILENAME |";
+    }
+    
+    return true;
+}
+
+string MixFile::printFileList(int flags = 1) {
+    stringstream os;
+
+    if (flags & 1) {
+        if(filenames.empty())
+            readFileNames();
+
+        os << setw(35) << setfill(' ') << "FILENAME |";
     }
 
 
-    cout << setw(12) << setfill(' ') << "ID | " << setw(12) << setfill(' ') << "ADDRESS |" << setw(10) << setfill(' ') << "SIZE" << endl;
+    os << setw(12) << setfill(' ') << "ID | " << setw(12) << setfill(' ') << "ADDRESS |" << setw(10) << setfill(' ') << "SIZE" << endl;
 
     for (int i = 0; i < files.size(); i++) {
         if (flags & 1) {
-            cout << setw(33) << setfill(' ') << filenames[i] << " |";
+            os << setw(33) << setfill(' ') << filenames[i] << " |";
         }
-        cout << " " << setw(8) << setfill('0') << hex << files[i].id << " | " << setw(10) << setfill(' ') << dec << (files[i].offset + dataoffset) << " | " << setw(10) << setfill(' ') << files[i].size << endl;
+        os << " " << setw(8) << setfill('0') << hex << files[i].id << " | " << setw(10) << setfill(' ') << dec << (files[i].offset + dataoffset) << " | " << setw(10) << setfill(' ') << files[i].size << endl;
     }
+    
+    return os.str();
 }
