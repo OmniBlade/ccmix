@@ -50,6 +50,7 @@ CP=cp
 CCADMIN=CCadmin
 
 
+
 # build
 build: .build-post
 
@@ -126,3 +127,11 @@ include nbproject/Makefile-impl.mk
 
 # include project make variables
 include nbproject/Makefile-variables.mk
+
+install:
+	rm -r /usr/share/tsunmix
+	${MKDIR} /usr/share/tsunmix/
+	${CP} dist/Debug/GNU-Linux-x86/tsunmix /usr/share/tsunmix/
+	${CP} data/global\ mix\ database.dat /usr/share/tsunmix/
+	${CP} data/tsunmix /usr/bin/tsunmix
+

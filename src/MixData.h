@@ -11,6 +11,14 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <cstdlib>
+#ifdef WINDOWS
+    #include <direct.h>
+    #define GetCurrentDir _getcwd
+#else
+    #include <unistd.h>
+    #define GetCurrentDir getcwd
+ #endif
 
 
 class MixData {
@@ -24,6 +32,7 @@ public:
 private:
     char * data;
     int dsize;
+    char cPath[FILENAME_MAX];
     std::vector<std::string> filename;
 };
 

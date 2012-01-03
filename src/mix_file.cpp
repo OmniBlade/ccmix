@@ -66,7 +66,6 @@ unsigned int MixFile::getID(t_game game, string name) {
         crc.init();
         crc.do_block(name.c_str(), name.length());
         return crc.get_crc();
-        return 0;
     }
 }
 
@@ -76,7 +75,6 @@ bool MixFile::open(const std::string path) {
     
     fh.open(path.c_str(), ios::binary);
     if (fh.rdstate() & ifstream::failbit) {
-        cout << "Unable to read file!" << endl;
         return false;
     }
     
@@ -221,7 +219,6 @@ bool MixFile::extractAll(std::string outPath, bool withFileNames) {
         bool found = false;
         for (int j = 0; j < filenamesdb.size(); j++) {
             if (getID(game_ts, filenamesdb[j]) == files[i].id) {
-                //cout << "filename found: " << filenamesdb[j] << ";" << endl;
                 extractFile(files[i].id, outPath + "/" + filenamesdb[j]);
                 found = true;
                 break;
@@ -230,7 +227,6 @@ bool MixFile::extractAll(std::string outPath, bool withFileNames) {
         if (mixdb && !found) {
             for (int j = 0; j < filenamesdb_local.size(); j++) {
                 if (getID(game_ts, filenamesdb_local[j]) == files[i].id) {
-                    //cout << "filename found: " << filenamesdb[j] << ";" << endl;
                     extractFile(files[i].id, outPath + "/" + filenamesdb_local[j]);
                     found = true;
                     break;

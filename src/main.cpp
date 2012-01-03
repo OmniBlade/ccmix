@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
             cout << mix.printFileList(1);
         } else if (!strcmp(argv[2], "extract") || !strcmp(argv[2], "extid") || !strcmp(argv[2], "extid16")) {
             if (!strcmp(argv[2], "extid16")){
-                cout << "Warning: option \"extid16\" is deprecated. Use \"extid\" insted. Use \"0x\" id prefix for hex format." << endl;
+                cout << "Warning: option \"extid16\" is deprecated. Use \"extid\" insted, \"0x\" id prefix for hex format." << endl;
             }
             if (argc < 4) {
                 if (!strcmp(argv[2], "extract"))
