@@ -22,10 +22,12 @@ void t_mix_header_copy(t_mix_header* header, char * data) {
     memcpy((char *) &(header->size), data, 4);
 }
 
-MixFile::MixFile() {
+MixFile::MixFile(const char * pDirectory) {
+    string gmdFile = pDirectory;
+    gmdFile.append("/global mix database.dat");
     this->dataoffset = 0;
     mixdb = NULL;
-    globaldb = new MixData("global mix database.dat");
+    globaldb = new MixData(gmdFile);
 }
 
 MixFile::MixFile(const MixFile& orig) {

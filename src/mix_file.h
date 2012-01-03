@@ -104,7 +104,7 @@ const int mix_encrypted = 0x00020000;
  */
 class MixFile {
 public:
-    MixFile();
+    MixFile(const char *);
     MixFile(const MixFile& orig);
     virtual ~MixFile();
     /**

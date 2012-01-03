@@ -42,11 +42,11 @@ MixData::MixData(std::string filePath) {
     fh.open(filePath.c_str(), ios::binary);
     if (fh.rdstate() & ifstream::failbit) {
         fh.clear();
-        filePath = string("/usr/share/tsunmix/") + filePath;
-        fh.open(filePath.c_str(), ios::binary);
-        if (fh.rdstate() & ifstream::failbit) {
+
+//        fh.open(filePath.c_str(), ios::binary);
+  //      if (fh.rdstate() & ifstream::failbit) {
             cout << "Unable to load global mix database! (" << filePath << ")" << endl;
-        }
+    //    }
     }
     /* get file size */
     begin = fh.tellg();

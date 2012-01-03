@@ -15,8 +15,38 @@
 using namespace std;
 //using namespace boost::filesystem;
 
+#ifdef WINDOWS
+    #define DIR_SEPARATOR '\\'
+#else
+    #define DIR_SEPARATOR '/'
+ #endif
+
+
+static const char*
+getCurrentDir(const char* const program_location) {
+    register int i;
+    const char* const loc = program_location;
+
+    size_t size = strlen(loc);
+
+    for (i = (size - 1); (i >= 0) && (loc[i] != DIR_SEPARATOR); --i)
+        ;
+
+    if (loc[i] == DIR_SEPARATOR) {
+        char* curdir = (char*) malloc((i + 1) * sizeof (char));
+        if (curdir != NULL) {
+            strncpy(curdir, loc, (size_t) i);
+            curdir[i] = '\0';
+            return curdir;
+        }
+    }
+
+    const char* curdir = ".";
+    return curdir;
+}
+
 int main(int argc, char** argv) {
-    MixFile mix;
+    MixFile mix(getCurrentDir(argv[0]));
     string oPath;
     string iFile;
     if (argc < 2) {
@@ -33,12 +63,12 @@ int main(int argc, char** argv) {
         if (!strcmp(argv[2], "list")) {
             cout << mix.printFileList(1);
         } else if (!strcmp(argv[2], "extract") || !strcmp(argv[2], "extid") || !strcmp(argv[2], "extid16")) {
-            if (!strcmp(argv[2], "extid16")){
+            if (!strcmp(argv[2], "extid16")) {
                 cout << "Warning: option \"extid16\" is deprecated. Use \"extid\" insted, \"0x\" id prefix for hex format." << endl;
             }
             if (argc < 4) {
                 if (!strcmp(argv[2], "extract"))
-                cout << "Usage \"tsunmix <filename.mix> extract <file>\"." << endl;
+                    cout << "Usage \"tsunmix <filename.mix> extract <file>\"." << endl;
                 else if (!strcmp(argv[2], "extid"))
                     cout << "Usage \"tsunmix <filename.mix> extid <crc id>\". Use \"0x\" id prefix for hex format." << endl;
                 else if (!strcmp(argv[2], "extid16"))
