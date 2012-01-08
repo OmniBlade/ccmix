@@ -16,21 +16,28 @@
 
 using namespace std;
 
+#ifdef WINDOWS
+    #define DIR_SEPARATOR '\\'
+#else
+    #define DIR_SEPARATOR '/'
+ #endif
+
 void t_mix_header_copy(t_mix_header* header, char * data) {
     memcpy((char *) &(header->c_files), data, 2);
     data += 2;
     memcpy((char *) &(header->size), data, 4);
 }
 
-MixFile::MixFile(const char * pDirectory) {
+MixFile::MixFile(const char * pDirectory, const char * gmd) {
     string gmdFile = pDirectory;
-    gmdFile.append("/global mix database.dat");
+    char dsprt[2] = {DIR_SEPARATOR, '\0'};
+    gmdFile.append(dsprt);
+    gmdFile.append(gmd);
     this->dataoffset = 0;
     mixdb = NULL;
+    m_has_checksum = false;
+    m_is_encrypted = false;
     globaldb = new MixData(gmdFile);
-}
-
-MixFile::MixFile(const MixFile& orig) {
 }
 
 MixFile::~MixFile() {
@@ -114,6 +121,10 @@ bool MixFile::open(const std::string path) {
             readIndex();
         }
 
+    }
+    else{
+        fh.seekg(6);
+        readIndex();
     }
     return true;
 }
@@ -369,4 +380,28 @@ string MixFile::printFileList(int flags = 1) {
     }
     
     return os.str();
+}
+
+bool MixFile::decrypt(std::string outPath){
+    ofstream ofh;
+    char * buff;
+    if(!m_is_encrypted)
+        return false;
+    
+    ofh.open(outPath.c_str(), ios::binary);
+    ofh.write((char *)&(mix_head.c_files),2);
+    ofh.write((char *)&(mix_head.size),4);
+    
+    for(unsigned short i=0; i<mix_head.c_files; i++){
+        ofh.write((char *)&(files[i]), 12);
+    }
+    buff = new char[mix_head.size];
+    fh.seekg(dataoffset);
+    fh.read(buff,mix_head.size);
+    ofh.write(buff,mix_head.size);
+    
+    ofh.close();
+    
+    delete[] buff;
+    return true;
 }

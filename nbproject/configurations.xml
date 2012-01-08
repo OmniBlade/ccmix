@@ -74,5 +74,21 @@
         </asmTool>
       </compileType>
     </conf>
+    <conf name="Windows" type="1">
+      <toolsSet>
+        <remote-sources-mode>LOCAL_SOURCES</remote-sources-mode>
+        <compilerSet>default</compilerSet>
+      </toolsSet>
+      <compileType>
+        <ccTool>
+          <developmentMode>5</developmentMode>
+          <architecture>1</architecture>
+          <commandlineTool>i586-mingw32msvc-c++</commandlineTool>
+          <preprocessorList>
+            <Elem>WINDOWS</Elem>
+          </preprocessorList>
+        </ccTool>
+      </compileType>
+    </conf>
   </confs>
 </configurationDescriptor>

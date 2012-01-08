@@ -104,8 +104,8 @@ const int mix_encrypted = 0x00020000;
  */
 class MixFile {
 public:
-    MixFile(const char *);
-    MixFile(const MixFile& orig);
+    MixFile(const char *, const char * gmd = "global mix database.dat");
+    //MixFile(const MixFile& orig);
     virtual ~MixFile();
     /**
      * @brief open mix archive
@@ -159,6 +159,12 @@ public:
      * @return  CRC ID of file
      */
     unsigned int getID(t_game game, std::string name);
+    /**
+     * @brief save file in decrypted format
+     * @param outPath output filename
+     * @return true if successful
+     */
+    bool decrypt(std::string outPath);
     std::vector<std::string> getFileNames();
     std::vector<t_mix_index_entry> getFileIndex(){ return files; };
 private:

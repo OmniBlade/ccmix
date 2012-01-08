@@ -129,6 +129,17 @@ int main(int argc, char** argv) {
                     mix.extractAll(oPath);
             } else
                 mix.extractAll(oPath);
+        } else if (!strcmp(argv[2], "decrypt")) {
+            if (argc > 4) {
+                if (!strcmp(argv[3], "-o")) {
+                    oPath = argv[4];
+                } else
+                    oPath = string(argv[1]) + "_decoded.mix";
+            } else
+                    oPath = string(argv[1]) + "_decoded.mix";
+            //create_directory((const path)argv[0]);
+            if(mix.decrypt(oPath))
+            cout << "File " << oPath << " created successfuly." << endl;
         }
     }
 
