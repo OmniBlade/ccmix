@@ -14,22 +14,22 @@ CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/tsunmix
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux-x86/package
 CND_PACKAGE_NAME_Debug=tsunmix.tar
 CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux-x86/package/tsunmix.tar
-# Release configuration
-CND_PLATFORM_Release=GNU-Linux-x86
-CND_ARTIFACT_DIR_Release=dist/Release/GNU-Linux-x86
-CND_ARTIFACT_NAME_Release=tsunmix
-CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux-x86/tsunmix
-CND_PACKAGE_DIR_Release=dist/Release/GNU-Linux-x86/package
-CND_PACKAGE_NAME_Release=tsunmix.tar
-CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux-x86/package/tsunmix.tar
+# Debian configuration
+CND_PLATFORM_Debian=GNU-Linux-x86
+CND_ARTIFACT_DIR_Debian=dist/Debian/GNU-Linux-x86
+CND_ARTIFACT_NAME_Debian=tsunmix
+CND_ARTIFACT_PATH_Debian=dist/Debian/GNU-Linux-x86/tsunmix
+CND_PACKAGE_DIR_Debian=dist/Debian/GNU-Linux-x86/package
+CND_PACKAGE_NAME_Debian=tsunmix.deb
+CND_PACKAGE_PATH_Debian=dist/Debian/GNU-Linux-x86/package/tsunmix.deb
 # Windows configuration
-CND_PLATFORM_Windows=GNU-Linux-x86
-CND_ARTIFACT_DIR_Windows=dist/Windows/GNU-Linux-x86
-CND_ARTIFACT_NAME_Windows=tsunmix
-CND_ARTIFACT_PATH_Windows=dist/Windows/GNU-Linux-x86/tsunmix
-CND_PACKAGE_DIR_Windows=dist/Windows/GNU-Linux-x86/package
-CND_PACKAGE_NAME_Windows=tsunmix.tar
-CND_PACKAGE_PATH_Windows=dist/Windows/GNU-Linux-x86/package/tsunmix.tar
+CND_PLATFORM_Windows=mingw-Linux-x86
+CND_ARTIFACT_DIR_Windows=dist/Windows/mingw-Linux-x86
+CND_ARTIFACT_NAME_Windows=tsunmix.exe
+CND_ARTIFACT_PATH_Windows=dist/Windows/mingw-Linux-x86/tsunmix.exe
+CND_PACKAGE_DIR_Windows=dist/Windows/mingw-Linux-x86/package
+CND_PACKAGE_NAME_Windows=tsunmix.zip
+CND_PACKAGE_PATH_Windows=dist/Windows/mingw-Linux-x86/package/tsunmix.zip
 #
 # include compiler specific variables
 #

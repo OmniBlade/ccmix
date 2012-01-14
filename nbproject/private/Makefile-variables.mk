@@ -4,5 +4,5 @@
 # NOCDDL
 #
 # Debug configuration
-# Release configuration
+# Debian configuration
 # Windows configuration
