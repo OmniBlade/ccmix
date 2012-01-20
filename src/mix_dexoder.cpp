@@ -31,7 +31,7 @@ typedef dword bignum4[4];
 typedef dword bignum[64];
 typedef dword bignum130[130];
 
-struct
+static struct
 {
     bignum key1;
     bignum key2;
@@ -53,7 +53,7 @@ static void init_bignum(bignum n, dword val, dword len)
 static void move_key_to_big(bignum n, char *key, dword klen, dword blen)
 {
     dword sign;
-    int i;
+    unsigned int i;
 
     if (key[0] & 0x80) sign = 0xff;
     else sign = 0;
@@ -120,10 +120,10 @@ static void init_pubkey()
     i2 = 0;
     while (i < strlen(pubkey_str))
     {
-        tmp = char2num[pubkey_str[i++]];
-        tmp <<= 6; tmp |= char2num[pubkey_str[i++]];
-        tmp <<= 6; tmp |= char2num[pubkey_str[i++]];
-        tmp <<= 6; tmp |= char2num[pubkey_str[i++]];
+        tmp = char2num[(int)pubkey_str[i++]];
+        tmp <<= 6; tmp |= char2num[(int)pubkey_str[i++]];
+        tmp <<= 6; tmp |= char2num[(int)pubkey_str[i++]];
+        tmp <<= 6; tmp |= char2num[(int)pubkey_str[i++]];
         keytmp[i2++] = (tmp >> 16) & 0xff;
         keytmp[i2++] = (tmp >> 8) & 0xff;
         keytmp[i2++] = tmp & 0xff;
@@ -163,12 +163,12 @@ static void shr_bignum(bignum n, dword bits, long int len)
 
   i2 = bits / 32;
   if (i2 > 0) {
-    for (i = 0; i < len - i2; i++) n[i] = n[i + i2];
-    for (; i < len; i++) n[i] = 0;
+    for (i = 0; i < (dword)len - i2; i++) n[i] = n[i + i2];
+    for (; i < (dword)len; i++) n[i] = 0;
     bits = bits % 32;
   }
   if (bits == 0) return;
-  for (i = 0; i < len - 1; i++) n[i] = (n[i] >> bits) | (n[i + 1] << (32 -
+  for (i = 0; i < (dword)len - 1; i++) n[i] = (n[i] >> bits) | (n[i + 1] << (32 -
 bits));
   n[i] = n[i] >> bits;
 }
@@ -194,7 +194,7 @@ static dword sub_bignum(bignum dest, bignum src1, bignum src2, dword carry, dwor
   dword i1, i2;
 
   len += len;
-  while (--len != -1) {
+  while (--len != (dword)-1) {
     i1 = *(word *)src1;
     i2 = *(word *)src2;
     *(word *)dest = i1 - i2 - carry;
@@ -258,8 +258,11 @@ static void init_two_dw(bignum n, dword len)
         shr_bignum(glob1_hi_inv, 1, 2);
         glob1_hi_bitlen--;
     }
-    glob1_hi_inv_lo = *(word *)glob1_hi_inv;
-    glob1_hi_inv_hi = *(((word *)glob1_hi_inv) + 1);
+    //glob1_hi_inv_lo = *(word *)glob1_hi_inv;
+    //glob1_hi_inv_hi = *(((word *)glob1_hi_inv) + 1);
+    glob1_hi_inv_lo = (word)(glob1_hi_inv[0] & 0x0000FFFF);
+    glob1_hi_inv_hi = (word)((glob1_hi_inv[0] & 0xFFFF0000) >> 16);
+
 }
 
 static void mul_bignum_word(bignum n1, bignum n2, dword mul, dword len)
@@ -292,7 +295,8 @@ static void mul_bignum(bignum dest, bignum src1, bignum src2, dword len)
 static void not_bignum(bignum n, dword len)
 {
   dword i;
-  for (i = 0; i < len; i++) *(n++) = ~*n;
+  //for (i = 0; i < len; i++) *(n++) = ~(*n);
+  for (i = 0; i < len; i++) n[i] = ~n[i];
 }
 
 static void neg_bignum(bignum n, dword len)
@@ -381,7 +385,7 @@ static void calc_a_key(bignum n1, bignum n2, bignum n3, bignum n4, dword len)
     n3 += n3_len - 1;
     n3_bitlen--;
     mov_bignum(n1, n2, n4_len);
-    while (--n3_bitlen != -1)
+    while (--n3_bitlen != (dword)-1)
     {
         if (bit_mask == 0)
         {

@@ -113,7 +113,7 @@ public:
      * @retval true file opened
      * @retval false file not found
      */
-    bool open(const std::string path);
+    bool open(const std::string path, t_game openGame = game_ts);
     /**
      * @brief extract file from mix archive
      * @param fileID CRC ID of file
@@ -167,7 +167,13 @@ public:
     bool decrypt(std::string outPath);
     std::vector<std::string> getFileNames();
     std::vector<t_mix_index_entry> getFileIndex(){ return files; };
-private:
+    /**
+     * @brief close mix file 
+     * 
+     * Prepare for opening another file.
+     */
+    void close();
+protected:
     bool readIndex();
     bool readEncryptedIndex();
     bool readFileNames();
@@ -185,6 +191,8 @@ private:
     char key[56];
     char decrypt_buffer[8]; // begining of next index read at the end of last block
     int decrypt_size; // size of valid buffer data
+    
+    t_game mixGame;
 };
 
 #endif	/* MIX_FILE_H */
