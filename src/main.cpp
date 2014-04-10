@@ -9,7 +9,7 @@
 #include <boost/program_options.hpp>
 //#include <boost/system/system_error.hpp>
 #include <cstdlib>
-#include "MixEditor.h"
+//#include "MixEditor.h"
 #include <iostream>
 #include <string.h>
 

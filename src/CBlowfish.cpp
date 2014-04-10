@@ -7,6 +7,7 @@
 
 #include "CBlowfish.h"
 #include <cstring>
+#include <stdint.h>
 
 const t_bf_p p = {
     0x243f6a88, 0x85a308d3, 0x13198a2e, 0x03707344,
@@ -273,10 +274,10 @@ const t_bf_s s = {
     0x90d4f869, 0xa65cdea0, 0x3f09252d, 0xc208e69f,
     0xb74e6132, 0xce77e25b, 0x578fdfe3, 0x3ac372e6}};
 
-void Cblowfish::set_key(const byte* key, int cb_key)
+void Cblowfish::set_key(const uint8_t* key, int cb_key)
 {
     int i, j;
-    dword datal, datar;
+    uint32_t datal, datar;
 
     memcpy(m_p, p, sizeof(t_bf_p));
     memcpy(m_s, s, sizeof(t_bf_s));
@@ -313,25 +314,25 @@ void Cblowfish::set_key(const byte* key, int cb_key)
     }
 }
 
-inline dword Cblowfish::S(dword x, int i) const
+inline uint32_t Cblowfish::S(uint32_t x, int i) const
 {
     return m_s[i][(x >> ((3 - i) << 3)) & 0xff];
 }
 
-inline dword Cblowfish::bf_f(dword x) const
+inline uint32_t Cblowfish::bf_f(uint32_t x) const
 {
     return ((S(x, 0) + S(x, 1)) ^ S(x, 2)) + S(x, 3);
 }
 
-inline void Cblowfish::ROUND(dword& a, dword b, int n) const
+inline void Cblowfish::ROUND(uint32_t& a, uint32_t b, int n) const
 {
     a ^= bf_f(b) ^ m_p[n];
 }
 
-void Cblowfish::encipher(dword& xl, dword& xr) const
+void Cblowfish::encipher(uint32_t& xl, uint32_t& xr) const
 {
-    dword Xl = xl;
-    dword Xr = xr;
+    uint32_t Xl = xl;
+    uint32_t Xr = xr;
 
     Xl ^= m_p[0];
     ROUND (Xr, Xl, 1);  ROUND (Xl, Xr, 2);
@@ -348,10 +349,10 @@ void Cblowfish::encipher(dword& xl, dword& xr) const
     xl = Xr;
 }
 
-void Cblowfish::decipher(dword& xl, dword& xr) const
+void Cblowfish::decipher(uint32_t& xl, uint32_t& xr) const
 {
-    dword  Xl = xl;
-    dword  Xr = xr;
+    uint32_t  Xl = xl;
+    uint32_t  Xr = xr;
 
     Xl ^= m_p[17];
     ROUND (Xr, Xl, 16);  ROUND (Xl, Xr, 15);
@@ -368,9 +369,9 @@ void Cblowfish::decipher(dword& xl, dword& xr) const
     xr = Xl;
 }
 
-static inline dword reverse(dword v)
+static inline uint32_t reverse(uint32_t v)
 {
-    dword ret = 0;
+    uint32_t ret = 0;
     ret += ((v & 0x000000ff) << 24);
     ret += ((v & 0x0000ff00) << 8);
     ret += ((v & 0x00ff0000) >> 8);
@@ -388,13 +389,13 @@ static inline dword reverse(dword v)
 
 void Cblowfish::encipher(const void* s, void* d, int size) const
 {
-    const dword* r = reinterpret_cast<const dword*>(s);
-    dword* w = reinterpret_cast<dword*>(d);
+    const uint32_t* r = reinterpret_cast<const uint32_t*>(s);
+    uint32_t* w = reinterpret_cast<uint32_t*>(d);
     size >>= 3;
     while (size--)
     {
-        dword a = reverse(*r++);
-        dword b = reverse(*r++);
+        uint32_t a = reverse(*r++);
+        uint32_t b = reverse(*r++);
         encipher(a, b);
         *w++ = reverse(a);
         *w++ = reverse(b);
@@ -403,13 +404,13 @@ void Cblowfish::encipher(const void* s, void* d, int size) const
 
 void Cblowfish::decipher(const void* s, void* d, int size) const
 {
-    const dword* r = reinterpret_cast<const dword*>(s);
-    dword* w = reinterpret_cast<dword*>(d);
+    const uint32_t* r = reinterpret_cast<const uint32_t*>(s);
+    uint32_t* w = reinterpret_cast<uint32_t*>(d);
     size >>= 3;
     while (size--)
     {
-        dword a = reverse(*r++);
-        dword b = reverse(*r++);
+        uint32_t a = reverse(*r++);
+        uint32_t b = reverse(*r++);
         decipher(a, b);
         *w++ = reverse(a);
         *w++ = reverse(b);

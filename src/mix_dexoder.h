@@ -10,13 +10,14 @@
 
 #include <cstring>
 
-typedef unsigned char byte;
-typedef unsigned short word;
-typedef unsigned long dword;
+#ifdef _MSC_VER
+#include "win32/stdint.h"
+#else
+#include <stdint.h>
+#endif
 
 
-
-void get_blowfish_key(const byte* s, byte* d);
+void get_blowfish_key(const uint8_t* s, uint8_t* d);
 
 
 #endif	/* MIX_DEXODER_H */

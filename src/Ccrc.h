@@ -8,6 +8,12 @@
 #ifndef CCRC_H
 #define	CCRC_H
 
+#ifdef _MSC_VER
+#include "win32/stdint.h"
+#else
+#include <stdint.h>
+#endif
+
 class Ccrc
 {
 public:
@@ -18,12 +24,12 @@ public:
         m_crc = 0;
     }
 
-    int get_crc() const
+    uint32_t get_crc() const
     {
         return m_crc;
     }
 private:
-    unsigned int m_crc;
+    uint32_t m_crc;
 };
 
 #endif	/* CCRC_H */

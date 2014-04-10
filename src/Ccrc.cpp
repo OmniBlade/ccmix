@@ -9,7 +9,7 @@
 
 
 
-int crc_table[256] = {
+int32_t crc_table[256] = {
     0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3,
     0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988, 0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91,
     0x1db71064, 0x6ab020f2, 0xf3b97148, 0x84be41de, 0x1adad47d, 0x6ddde4eb, 0xf4d4b551, 0x83d385c7,
@@ -45,7 +45,7 @@ int crc_table[256] = {
 
 void Ccrc::do_block(const void* data, int size)
 {
-    const unsigned char* r = reinterpret_cast<const unsigned char*>(data);
+    const uint8_t* r = reinterpret_cast<const uint8_t*>(data);
     m_crc = ~m_crc;
     while (size--)
         m_crc = (m_crc >> 8) ^ crc_table[*r++ ^ (m_crc & 0xff)];

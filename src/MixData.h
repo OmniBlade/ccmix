@@ -12,6 +12,11 @@
 #include <string>
 #include <sstream>
 
+#ifdef _MSC_VER
+#include "win32/stdint.h"
+#else
+#include <stdint.h>
+#endif
 
 class MixData {
 public:
