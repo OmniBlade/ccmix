@@ -12,6 +12,12 @@
 #include <vector>
 #include "MixData.h"
 
+#ifdef _MSC_VER
+#include "win32/stdint.h"
+#else
+#include <stdint.h>
+#endif
+
 
 
 /**
@@ -49,10 +55,10 @@ union t_mix_header
 {
 	struct
 	{
-		unsigned short c_files;
-		unsigned int size;
+		uint16_t c_files;
+		uint32_t size;
 	};
-	unsigned int flags;
+	uint32_t flags;
 };
 
 /**
@@ -80,9 +86,9 @@ union t_mix_header
  */
 struct t_mix_index_entry
 {
-    unsigned int id;                // id, used to identify the file instead of a normal name
-    unsigned int offset;                     // offset from start of body
-    unsigned int size;                       // size of this internal file
+    uint32_t id;                // id, used to identify the file instead of a normal name
+    uint32_t offset;                     // offset from start of body
+    uint32_t size;                       // size of this internal file
 };
 
 typedef enum 
@@ -92,8 +98,8 @@ typedef enum
     game_td
 } t_game;
 
-const int mix_checksum = 0x00010000;
-const int mix_encrypted = 0x00020000;
+const int32_t mix_checksum = 0x00010000;
+const int32_t mix_encrypted = 0x00020000;
 
 
 /**
@@ -104,7 +110,7 @@ const int mix_encrypted = 0x00020000;
  */
 class MixFile {
 public:
-    MixFile(const char *, const char * gmd = "global mix database.dat");
+    MixFile(const std::string gmd = "global mix database.dat");
     //MixFile(const MixFile& orig);
     virtual ~MixFile();
     /**
@@ -113,7 +119,7 @@ public:
      * @retval true file opened
      * @retval false file not found
      */
-    bool open(const std::string path, t_game openGame = game_ts);
+    bool open(const std::string path, t_game openGame = game_td);
     /**
      * @brief extract file from mix archive
      * @param fileID CRC ID of file
@@ -121,7 +127,7 @@ public:
      * @retval true file extracted
      * @retval false file not present in the archive 
      */
-    bool extractFile(unsigned int fileID, std::string outPath);
+    bool extractFile(uint32_t fileID, std::string outPath);
     /**
      * @brief extract file from mix archive
      * @param fileName name of file
@@ -158,7 +164,7 @@ public:
      * @param name filename
      * @return  CRC ID of file
      */
-    unsigned int getID(t_game game, std::string name);
+    uint32_t getID(t_game game, std::string name);
     /**
      * @brief save file in decrypted format
      * @param outPath output filename
@@ -185,12 +191,12 @@ protected:
     bool m_has_checksum;
     MixData * mixdb; // local mix database.dat
     MixData * globaldb; // global filenames database
-    int dataoffset;
+    int32_t dataoffset;
     std::ifstream fh; // file handler
     char key_source[80];
     char key[56];
     char decrypt_buffer[8]; // begining of next index read at the end of last block
-    int decrypt_size; // size of valid buffer data
+    int32_t decrypt_size; // size of valid buffer data
     
     t_game mixGame;
 };

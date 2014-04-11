@@ -27,7 +27,7 @@ std::vector<std::string> split(const char * data, int size) {
 
 using namespace std;
 
-MixData::MixData(ifstream * fh, unsigned int offset, unsigned int size) {
+MixData::MixData(ifstream * fh, uint32_t offset, uint32_t size) {
     data = new char[size];
     dsize = size;
     fh->seekg(offset, ios_base::beg);
@@ -38,7 +38,7 @@ MixData::MixData(ifstream * fh, unsigned int offset, unsigned int size) {
 
 MixData::MixData(std::string filePath) {
     ifstream fh;
-    long begin, end, size;
+    uint32_t begin, end, size;
     fh.open(filePath.c_str(), ios::binary);
     if (fh.rdstate() & ifstream::failbit) {
         fh.clear();

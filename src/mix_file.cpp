@@ -28,11 +28,12 @@ void t_mix_header_copy(t_mix_header* header, char * data) {
     memcpy((char *) &(header->size), data, 4);
 }
 
-MixFile::MixFile(const char * pDirectory, const char * gmd) {
-    string gmdFile = pDirectory;
-    char dsprt[2] = {DIR_SEPARATOR, '\0'};
-    gmdFile.append(dsprt);
-    gmdFile.append(gmd);
+//MixFile::MixFile(const char * pDirectory, const string gmdFile) {
+MixFile::MixFile(const string gmdFile) {
+    //string gmdFile = pDirectory;
+    //char dsprt[2] = {DIR_SEPARATOR, '\0'};
+    //gmdFile.append(dsprt);
+    //gmdFile.append(gmd);
     this->dataoffset = 0;
     mixdb = NULL;
     m_has_checksum = false;
@@ -44,19 +45,19 @@ MixFile::~MixFile() {
     fh.close();
 }
 
-unsigned int MixFile::getID(t_game game, string name) {
+uint32_t MixFile::getID(t_game game, string name) {
     transform(name.begin(), name.end(), name.begin(),
             (int(*)(int)) std::toupper); // convert to uppercase
     if (game != game_ts) { // for TD and RA
         int i = 0;
-        unsigned int id = 0;
+        uint32_t id = 0;
         int l = name.length(); // length of the filename
         while (i < l) {
-            unsigned int a = 0;
+            uint32_t a = 0;
             for (int j = 0; j < 4; j++) {
                 a >>= 8;
                 if (i < l)
-                    a += static_cast<unsigned int> (name[i]) << 24;
+                    a += static_cast<uint32_t> (name[i]) << 24;
                 i++;
             }
             id = (id << 1 | id >> 31) + a;
@@ -101,10 +102,10 @@ bool MixFile::open(const std::string path, t_game openGame) {
             /* read key_source */
             fh.seekg(4);
             fh.read(key_source, 80);
-            get_blowfish_key((byte *) key_source, (byte *) key);
+            get_blowfish_key((uint8_t *) key_source, (uint8_t *) key);
             Cblowfish blfish;
-            byte enc_header[8];
-            blfish.set_key((byte *) key, 56);
+            uint8_t enc_header[8];
+            blfish.set_key((uint8_t *) key, 56);
 
             /* read encrypted header */
             fh.seekg(84);
@@ -158,26 +159,24 @@ bool MixFile::readIndex() {
 bool MixFile::readEncryptedIndex() {
     int indexSize;
     int blockCnt;
-    byte encBuff[8];
+    uint8_t encBuff[8];
     Cblowfish blfish;
     char * encIndex;
     t_mix_index_entry fheader;
 
-    if (!fh.is_open())
-        return false;
+    if (!fh.is_open()) return false;
 
     dataoffset += 80;
 
     indexSize = mix_head.c_files * 12;
     blockCnt = (indexSize - decrypt_size) / 8;
 
-    if ((indexSize - decrypt_size) % 8)
-        blockCnt++;
+    if ((indexSize - decrypt_size) % 8) blockCnt++;
 
     encIndex = new char[blockCnt * 8 + decrypt_size];
     memcpy(encIndex, decrypt_buffer, decrypt_size);
 
-    blfish.set_key((byte *) key, 56);
+    blfish.set_key((uint8_t *) key, 56);
 
     for (int i = 0; i < blockCnt; i++) {
         fh.read((char*) &encBuff, 8);
@@ -204,8 +203,8 @@ bool MixFile::readEncryptedIndex() {
 bool MixFile::checkFileName(string fname) {
     transform(fname.begin(), fname.end(), fname.begin(),
             (int(*)(int)) std::toupper);
-    unsigned int fileID = getID(mixGame, fname);
-    for (unsigned int i = 0; i < files.size(); i++) {
+    uint32_t fileID = getID(mixGame, fname);
+    for (uint32_t i = 0; i < files.size(); i++) {
         if (files[i].id == fileID)
             return true;
     }
@@ -231,7 +230,7 @@ bool MixFile::extractAll(std::string outPath, bool withFileNames) {
 
     for (i = 0; i < mix_head.c_files; i++) {
         bool found = false;
-        for (unsigned int j = 0; j < filenamesdb.size(); j++) {
+        for (uint32_t j = 0; j < filenamesdb.size(); j++) {
             if (getID(mixGame, filenamesdb[j]) == files[i].id) {
                 extractFile(files[i].id, outPath + "/" + filenamesdb[j]);
                 found = true;
@@ -239,7 +238,7 @@ bool MixFile::extractAll(std::string outPath, bool withFileNames) {
             }
         }
         if (mixdb && !found) {
-            for (unsigned int j = 0; j < filenamesdb_local.size(); j++) {
+            for (uint32_t j = 0; j < filenamesdb_local.size(); j++) {
                 if (getID(mixGame, filenamesdb_local[j]) == files[i].id) {
                     extractFile(files[i].id, outPath + "/" + filenamesdb_local[j]);
                     found = true;
@@ -270,15 +269,15 @@ bool MixFile::extractAllFast(std::string outPath) {
     return true;
 }
 
-bool MixFile::extractFile(unsigned int fileID, std::string outPath) {
+bool MixFile::extractFile(uint32_t fileID, std::string outPath) {
     ofstream oFile;
-    unsigned int f_offset = 0, f_size = 0;
+    uint32_t f_offset = 0, f_size = 0;
     char * buffer;
     bool found = false;
 
 
     // find file index entry
-    for (unsigned int i = 0; i < files.size(); i++) {
+    for (uint32_t i = 0; i < files.size(); i++) {
         if (files[i].id == fileID) {
             f_offset = files[i].offset;
             f_size = files[i].size;
@@ -330,7 +329,7 @@ bool MixFile::readFileNames() {
         bool found = false;
 
         /* try filenames from global database */
-        for (unsigned int j = 0; j < filenamesdb.size(); j++) {
+        for (uint32_t j = 0; j < filenamesdb.size(); j++) {
             if (getID(mixGame, filenamesdb[j]) == files[i].id) {
                 filenames.push_back(filenamesdb[j]);
                 found = true;
@@ -340,7 +339,7 @@ bool MixFile::readFileNames() {
 
         /* try filenames from local database */
         if (mixdb && !found) {
-            for (unsigned int j = 0; j < filenamesdb_local.size(); j++) {
+            for (uint32_t j = 0; j < filenamesdb_local.size(); j++) {
                 if (getID(mixGame, filenamesdb_local[j]) == files[i].id) {
                     filenames.push_back(filenamesdb_local[j]);
                     found = true;
@@ -373,7 +372,7 @@ string MixFile::printFileList(int flags = 1) {
 
     os << setw(12) << setfill(' ') << "ID | " << setw(12) << setfill(' ') << "ADDRESS |" << setw(10) << setfill(' ') << "SIZE" << endl;
 
-    for (unsigned int i = 0; i < files.size(); i++) {
+    for (uint32_t i = 0; i < files.size(); i++) {
         if (flags & 1) {
             os << setw(33) << setfill(' ') << filenames[i] << " |";
         }

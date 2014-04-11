@@ -20,7 +20,7 @@
 
 class MixData {
 public:
-    MixData(std::ifstream * fh, unsigned int offset, unsigned int size);
+    MixData(std::ifstream * fh, uint32_t offset, uint32_t size);
     MixData(std::string filePath);
     //MixData(const MixData& orig);
     virtual ~MixData();
