@@ -21,6 +21,7 @@
 
 #else
 
+#include <unistd.h>
 #include <pwd.h>
 #include <dirent.h>
 #define TCHAR		char
@@ -30,28 +31,37 @@
 
 #endif
 
+#ifdef WINDOWS
+#define DIR_SEPARATOR '\\'
+#else
+#define DIR_SEPARATOR '/'
+#endif
+
 using namespace std;
 
 enum { OPT_HELP, OPT_EXTRACT, OPT_CREATE, OPT_GAME, OPT_FILES, OPT_DIR };
 typedef enum { NONE, EXTRACT, CREATE, ADD, REMOVE } t_mixmode;
 
-#ifdef WINDOWS
+static const string getCurrentDir(const char* const program_location) {
+    register int i;
+    const char* const loc = program_location;
 
-string gmd_paths[3] = { "c:\\Program Files\\ccmix\\global mix database.dat",
-                        "c:\\Users\\user\\global mix database.dat",
-                        "c:\\Program Files\\xcc\\global mix database.dat" };
+    size_t size = strlen(loc);
 
-string user_home = getenv("HOMEDRIVE") + getenv("HOMEPATH");
+    for (i = (size - 1); (i >= 0) && (loc[i] != DIR_SEPARATOR); --i);
 
-#else
+    if (loc[i] == DIR_SEPARATOR) {
+        char* curdir = (char*) malloc((i + 1) * sizeof (char));
+        if (curdir != NULL) {
+            strncpy(curdir, loc, (size_t) i);
+            curdir[i] = '\0';
+            return string(curdir);
+        }
+    }
 
-string gmd_paths[3] = { "/usr/local/ccmix/global mix database.dat",
-                        "/home/user/global mix database.dat",
-                        "/usr/shared/ccmix/global mix database.dat" };
-
-string user_home = getpwuid(getuid())->pwd_dir;
-
-#endif
+    const char* curdir = ".";
+    return string(curdir);
+}
 
 // This just shows a quick usage guide in case an incorrect parameter was used
 // or not all required args were provided.
@@ -81,27 +91,13 @@ inline void ShowHelp(TCHAR** argv)
 }
 
 //quick inline to respond to more than one command being specified.
-inline void NoMultiMode()
+inline void NoMultiMode(TCHAR** argv)
 {
     _tprintf(_T("You cannot specify more than one command at once.\n"));
-    ShowUsage();
+    ShowUsage(argv);
 }
 
-// Test if a file exists, used to find global mix database
-inline bool exists_test (const std::string& name) {
-    if (FILE *file = fopen(name.c_str(), "r")) {
-        fclose(file);
-        return true;
-    } else {
-        return false;
-    }   
-}
 
-string FindGMD()
-{
-    string gmd_loc = "global mix database.dat";
-    return gmd_loc;
-}
 
 CSimpleOpt::SOption g_rgOptions[] = {
     { OPT_EXTRACT,  _T("extract"),      SO_NONE    },
@@ -123,7 +119,8 @@ int _tmain(int argc, TCHAR** argv)
     
     string file = "";
     string dir = "";
-    string mixfile = string(argv[argc - 1]);
+    string input_mixfile = string(argv[argc - 1]);
+    const string program_path(argv[0]);
     t_game game = game_td;
     t_mixmode mode = NONE;
     
@@ -131,7 +128,7 @@ int _tmain(int argc, TCHAR** argv)
     
     while (args.Next()) {
         if (args.LastError() != SO_SUCCESS) {
-            _tprintf(stderr, _T("Invalid argument: %s\n"), args.OptionText());
+            _tprintf(_T("Invalid argument: %s\n"), args.OptionText());
             ShowUsage(argv);
             return 1;
         }
@@ -144,7 +141,7 @@ int _tmain(int argc, TCHAR** argv)
             if (args.OptionArg() != NULL) {
                 file = string(args.OptionArg());
             } else {
-                _tprintf(stderr, _T("-f option requires a filename.\n"));
+                _tprintf(_T("-f option requires a filename.\n"));
                 return 1;
             }
             return 0;
@@ -152,16 +149,16 @@ int _tmain(int argc, TCHAR** argv)
             if (args.OptionArg() != NULL) {
                 dir = string(args.OptionArg());
             } else {
-                _tprintf(stderr, _T("-d option requires a directory name.\n"));
+                _tprintf(_T("-d option requires a directory name.\n"));
                 return 1;
             }
             return 0;
         case OPT_CREATE:
-            if (mode != NONE) { NoMultiMode(); return 1; }
+            if (mode != NONE) { NoMultiMode(argv); return 1; }
             mode = CREATE;
             break;
         case OPT_EXTRACT:
-            if (mode != NONE) { NoMultiMode(); return 1; }
+            if (mode != NONE) { NoMultiMode(argv); return 1; }
             mode = CREATE;
             break;
         default:
@@ -174,6 +171,26 @@ int _tmain(int argc, TCHAR** argv)
                     args.OptionId(), args.OptionText());
             }
         }
+    }
+    
+    MixFile in_file(program_path);
+    if (!in_file.open(input_mixfile)){
+        cout << "Cannot open specified mix file" << endl;
+        return 1;
+    }
+    
+    switch(mode) {
+        case EXTRACT:
+            if (dir != "") {
+                in_file.extractAll(dir);
+                return 0;
+            } else {
+                in_file.extractAll();
+                return 0;
+            }
+            break;
+        default:
+            return 1;
     }
     
     return 0;

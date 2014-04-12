@@ -112,7 +112,7 @@ class MixFile {
 public:
     MixFile(const std::string gmd = "global mix database.dat");
     //MixFile(const MixFile& orig);
-    virtual ~MixFile();
+    ~MixFile();
     /**
      * @brief open mix archive
      * @param path mix file path
@@ -184,6 +184,7 @@ protected:
     bool readEncryptedIndex();
     bool readFileNames();
     bool extractAllFast(std::string outPath = ".");
+    std::string findGMD();
     t_mix_header mix_head; // mix file header
     std::vector<t_mix_index_entry> files; // list of file headers
     std::vector<std::string> filenames; // file names
