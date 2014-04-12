@@ -184,6 +184,7 @@ protected:
     bool readEncryptedIndex();
     bool readFileNames();
     bool extractAllFast(std::string outPath = ".");
+    std::string findGMD();
     t_mix_header mix_head; // mix file header
     std::vector<t_mix_index_entry> files; // list of file headers
     std::vector<std::string> filenames; // file names

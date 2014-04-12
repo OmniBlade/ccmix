@@ -1,1 +1,5 @@
 build
+bin
+nbproject
+*.a
+*.o
