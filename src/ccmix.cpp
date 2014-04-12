@@ -98,7 +98,6 @@ inline void NoMultiMode(TCHAR** argv)
 }
 
 
-
 CSimpleOpt::SOption g_rgOptions[] = {
     { OPT_EXTRACT,  _T("extract"),      SO_NONE    },
     { OPT_CREATE,   _T("create"),       SO_NONE    },
