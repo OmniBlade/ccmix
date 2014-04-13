@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #ifdef _MSC_VER
 
@@ -42,7 +43,8 @@ using namespace std;
 enum { OPT_HELP, OPT_EXTRACT, OPT_CREATE, OPT_GAME, OPT_FILES, OPT_DIR };
 typedef enum { NONE, EXTRACT, CREATE, ADD, REMOVE } t_mixmode;
 
-static const string getCurrentDir(const char* const program_location) {
+//get program directory from argv[0]
+static const string getProgramDir(const char* const program_location) {
     register int i;
     const char* const loc = program_location;
 
@@ -61,6 +63,25 @@ static const string getCurrentDir(const char* const program_location) {
 
     const char* curdir = ".";
     return string(curdir);
+}
+
+//search and test a few locations for a global mix database
+string findGMD(const string program_dir, const string home_dir)
+{
+    string gmd_loc = "global mix database.dat";
+    vector<string> gmd_dir(3);
+    gmd_dir[0] = home_dir;
+    gmd_dir[1] = "/usr/share/ccmix";
+    gmd_dir[2] = program_dir;
+    // Test if a file exists, used to find global mix database
+    for (int i = 0; i < gmd_dir.size(); i++) {
+        string gmd_test = gmd_dir[i] + DIR_SEPARATOR + gmd_loc;
+        if (FILE *file = fopen(gmd_test.c_str(), "r")) {
+            fclose(file);
+            return gmd_test;
+        }
+    }
+    return gmd_loc;
 }
 
 // This just shows a quick usage guide in case an incorrect parameter was used
@@ -120,6 +141,16 @@ int _tmain(int argc, TCHAR** argv)
     string dir = "";
     string input_mixfile = string(argv[argc - 1]);
     const string program_path(argv[0]);
+#ifdef WINDOWS
+    string user_home_dir = getenv("HOMEDRIVE") + getenv("HOMEPATH");
+#else    
+#ifndef HOME
+    string user_home_dir(getenv("HOME"));
+#else
+    string user_home_dir(getpwuid(getuid())->pw_dir);
+#endif
+#endif
+    
     t_game game = game_td;
     t_mixmode mode = NONE;
     
@@ -143,7 +174,7 @@ int _tmain(int argc, TCHAR** argv)
                 _tprintf(_T("-f option requires a filename.\n"));
                 return 1;
             }
-            return 0;
+            break;
         case OPT_DIR:
             if (args.OptionArg() != NULL) {
                 dir = string(args.OptionArg());
@@ -151,14 +182,14 @@ int _tmain(int argc, TCHAR** argv)
                 _tprintf(_T("-d option requires a directory name.\n"));
                 return 1;
             }
-            return 0;
+            break;
         case OPT_CREATE:
             if (mode != NONE) { NoMultiMode(argv); return 1; }
             mode = CREATE;
             break;
         case OPT_EXTRACT:
             if (mode != NONE) { NoMultiMode(argv); return 1; }
-            mode = CREATE;
+            mode = EXTRACT;
             break;
         default:
             if (args.OptionArg()) {
@@ -169,27 +200,34 @@ int _tmain(int argc, TCHAR** argv)
                 _tprintf(_T("option: %2d, text: '%s'\n"),
                     args.OptionId(), args.OptionText());
             }
+            break;
         }
     }
     
-    MixFile in_file(program_path);
+    cout << input_mixfile << endl;
+    MixFile in_file(findGMD(getProgramDir(program_path.c_str()), user_home_dir));
     if (!in_file.open(input_mixfile)){
         cout << "Cannot open specified mix file" << endl;
         return 1;
     }
     
+    cout << in_file.printFileList(1);
+    
     switch(mode) {
-        case EXTRACT:
-            if (dir != "") {
-                in_file.extractAll(dir);
-                return 0;
-            } else {
-                in_file.extractAll();
-                return 0;
-            }
-            break;
-        default:
-            return 1;
+    case EXTRACT:
+        if (dir != "") {
+            cout << input_mixfile << "\nExtract to dir " << dir << endl;
+            in_file.extractAll(dir);
+            return 0;
+        } else {
+            cout << input_mixfile << "\nExtract to current dir" << endl;
+            in_file.extractAll("./");
+            return 0;
+        }
+        break;
+    default:
+        cout << "command switch default, this shouldn't happen!!" << endl;
+        return 1;
     }
     
     return 0;

@@ -14,34 +14,15 @@
 #include "CBlowfish.h"
 #include "mix_dexoder.h"
 
-#ifndef WINDOWS
-
-#include <unistd.h>
-#include <pwd.h>
-
-#endif
-
 using namespace std;
 
 #ifdef WINDOWS
 
 #define DIR_SEPARATOR '\\'
 
-string gmd_paths[3] = { "c:\\Program Files\\ccmix\\global mix database.dat",
-                        "c:\\Users\\user\\global mix database.dat",
-                        "c:\\Program Files\\xcc\\global mix database.dat" };
-
-string user_home = getenv("HOMEDRIVE") + getenv("HOMEPATH");
-
 #else
 
 #define DIR_SEPARATOR '/'
-
-string gmd_paths[3] = { "/usr/local/ccmix/global mix database.dat",
-                        "/home/user/global mix database.dat",
-                        "/usr/shared/ccmix/global mix database.dat" };
-
-string user_home = getpwuid(getuid())->pw_dir;
 
 #endif
 
@@ -427,17 +408,6 @@ bool MixFile::decrypt(std::string outPath) {
 
     delete[] buff;
     return true;
-}
-
-string MixFile::findGMD()
-{
-    string gmd_loc = "global mix database.dat";
-    // Test if a file exists, used to find global mix database
-    if (FILE *file = fopen(gmd_loc.c_str(), "r")) {
-        fclose(file);
-    } else {
-    }   
-    return gmd_loc;
 }
 
 void MixFile::close() {
