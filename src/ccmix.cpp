@@ -40,8 +40,9 @@
 
 using namespace std;
 
-enum { OPT_HELP, OPT_EXTRACT, OPT_CREATE, OPT_GAME, OPT_FILES, OPT_DIR };
-typedef enum { NONE, EXTRACT, CREATE, ADD, REMOVE } t_mixmode;
+enum { OPT_HELP, OPT_EXTRACT, OPT_CREATE, OPT_GAME, OPT_FILES, OPT_DIR,
+       OPT_LIST, OPT_MIX };
+typedef enum { NONE, EXTRACT, CREATE, ADD, REMOVE, LIST } t_mixmode;
 
 //get program directory from argv[0]
 static const string getProgramDir(const char* const program_location) {
@@ -73,7 +74,6 @@ string findGMD(const string program_dir, const string home_dir)
     gmd_dir[0] = home_dir;
     gmd_dir[1] = "/usr/share/ccmix";
     gmd_dir[2] = program_dir;
-    // Test if a file exists, used to find global mix database
     for (int i = 0; i < gmd_dir.size(); i++) {
         string gmd_test = gmd_dir[i] + DIR_SEPARATOR + gmd_loc;
         if (FILE *file = fopen(gmd_test.c_str(), "r")) {
@@ -88,63 +88,114 @@ string findGMD(const string program_dir, const string home_dir)
 // or not all required args were provided.
 inline void ShowUsage(TCHAR** argv)
 {
-    cout << "Usage: " << argv[0] << " [-x|-c] (-f FILE) (-d DIR) MIXFILE" << endl;
+    cout << "Usage: " << argv[0] << " [--mode] (--file FILE)"
+            "(--directory DIR) [--mix MIXFILE]" << endl;
     cout << "Try `" << argv[0] << " -?` or `" << argv[0] << 
             " --help` for more information." << endl;
 }
 
 // Shows more detailed help if help flags were used in invocation.
-inline void ShowHelp(TCHAR** argv)
+void ShowHelp(TCHAR** argv)
 {
     cout << "/n***ccmix program usage***\n" << endl;
     cout << "Usage: " << argv[0] << 
-            " [COMMAND] (-f FILE) (-d DIR) (-g GAME) MIXFILE\n" << endl;
-    cout << "Commands:" << endl;
-    cout << "*extract*" << endl;
+            " [--mode] (--file FILE) (--directory DIR) (--game "
+            "[game_td|game_ra|game_ts]) [--mix MIXFILE]\n" << endl;
+    cout << "Modes:\n" << endl;
+    cout << "--extract" << endl;
     cout << "Extracts the contents of the specified mix file to the current "
             "directory.\n"
-            "-f specifies a single file to extract.\n"
-            "-d specifies an alternative directory to extract to.\n" << endl;
-    cout << "*create*" << endl;
+            "--file specifies a single file to extract.\n"
+            "--directory specifies an alternative directory to extract to.\n"
+            "--game specified the game the mix is from, game_td covers the\n"
+            "orignal C&C and Sole Survivor. game_ra covers Redalert and its\n"
+            "expansions. game_ts covers Tiberian Sun and Red Alert 2/Yuri's "
+            "Revenge.\n" << endl;
+    cout << "--create" << endl;
     cout << "Creates a new mix file from the contents of the current folder.\n"
-            "-f specifies a single file as initial file to add to the new mix.\n"
-            "-d specifies an alternative directory to create mix from.\n" << endl;
+            "--file specifies a single file as the initial file to add to the\n"
+            "new mix.\n"
+            "--directory specifies an alternative directory to create mix from.\n"
+            "--game specified the game the mix is from, game_td covers the\n"
+            "orignal C&C and Sole Survivor. game_ra covers Redalert and its\n"
+            "expansions. game_ts covers Tiberian Sun and Red Alert 2/Yuri's "
+            "Revenge.\n" << endl;
+    cout << "--list" << endl;
+    cout << "Lists the contents of the specified mix file.\n" 
+            "--game specified the game the mix is from, game_td covers the\n"
+            "orignal C&C and Sole Survivor. game_ra covers Redalert and its\n"
+            "expansions. game_ts covers Tiberian Sun and Red Alert 2/Yuri's "
+            "Revenge.\n" << endl;
 }
 
 //quick inline to respond to more than one command being specified.
 inline void NoMultiMode(TCHAR** argv)
 {
-    _tprintf(_T("You cannot specify more than one command at once.\n"));
+    _tprintf(_T("You cannot specify more than one mode at once.\n"));
     ShowUsage(argv);
 }
 
+bool Extraction(MixFile& in_file, string filename, string outdir, uint32_t id)
+{
+    if (outdir == "") outdir = "./";
+    
+    if (filename != "") {
+        if (!in_file.extractFile(filename, outdir)) {
+            cout << "Extraction failed" << endl;
+            return false;
+        } else {
+            return true;
+        }
+    } else if (id != 0){
+        if (!in_file.extractFile(id, outdir)) {
+            cout << "Extraction failed" << endl;
+            return false;
+        } else {
+            return true;
+        }
+    } else {
+        //cout << input_mixfile << "\nExtract to dir " << outdir << endl;
+        if (!in_file.extractAll(outdir)) {
+            cout << "Extraction failed" << endl;
+            return false;
+        } else {
+            return true;
+        }
+    }
+}
 
+//This specifies the various available command line options
 CSimpleOpt::SOption g_rgOptions[] = {
-    { OPT_EXTRACT,  _T("extract"),      SO_NONE    },
-    { OPT_CREATE,   _T("create"),       SO_NONE    },
-    { OPT_FILES,    _T("-f"),           SO_REQ_SEP }, // "-f ARG"
-    { OPT_DIR,      _T("-d"),           SO_REQ_SEP }, // "-d ARG"
-    { OPT_GAME,     _T("-g"),           SO_REQ_SEP }, // "-g ARG"
-    { OPT_HELP,     _T("-?"),           SO_NONE    }, // "-?"
-    { OPT_HELP,     _T("--help"),       SO_NONE    }, // "--help"
+    { OPT_EXTRACT,  _T("--extract"),      SO_NONE    },
+    { OPT_CREATE,   _T("--create"),       SO_NONE    },
+    { OPT_LIST,     _T("--list"),         SO_NONE    },
+    { OPT_FILES,    _T("--file"),         SO_REQ_SEP }, // "-f ARG"
+    { OPT_DIR,      _T("--directory"),    SO_REQ_SEP }, // "-d ARG"
+    { OPT_MIX,      _T("--mix"),          SO_REQ_SEP }, // "-d ARG"
+    { OPT_GAME,     _T("--game"),         SO_REQ_SEP }, // "-g ARG"
+    { OPT_HELP,     _T("-?"),             SO_NONE    }, // "-?"
+    { OPT_HELP,     _T("--help"),         SO_NONE    }, // "--help"
     SO_END_OF_OPTIONS                       // END
 };
     
 int _tmain(int argc, TCHAR** argv)
 {
-    if(argc <= 1) {
+    if(argc <= 2) {
         ShowUsage(argv);
         return 0;
     }
     
+    uint32_t file_id = 0;
     string file = "";
     string dir = "";
-    string input_mixfile = string(argv[argc - 1]);
+    string input_mixfile = "";
     const string program_path(argv[0]);
+
+//defs to set user home dir. Used to search for settings files.
 #ifdef WINDOWS
     string user_home_dir = getenv("HOMEDRIVE") + getenv("HOMEPATH");
 #else    
-#ifndef HOME
+#ifdef HOME
     string user_home_dir(getenv("HOME"));
 #else
     string user_home_dir(getpwuid(getuid())->pw_dir);
@@ -156,6 +207,7 @@ int _tmain(int argc, TCHAR** argv)
     
     CSimpleOpt args(argc, argv, g_rgOptions);
     
+    //Process the command line args and set some variables
     while (args.Next()) {
         if (args.LastError() != SO_SUCCESS) {
             _tprintf(_T("Invalid argument: %s\n"), args.OptionText());
@@ -164,72 +216,113 @@ int _tmain(int argc, TCHAR** argv)
         }
         
         switch (args.OptionId()) {
-        case OPT_HELP:
-            ShowHelp(argv);
-            return 0;
-        case OPT_FILES:
-            if (args.OptionArg() != NULL) {
-                file = string(args.OptionArg());
-            } else {
-                _tprintf(_T("-f option requires a filename.\n"));
-                return 1;
+            case OPT_HELP:
+            {
+                ShowHelp(argv);
+                return 0;
             }
-            break;
-        case OPT_DIR:
-            if (args.OptionArg() != NULL) {
-                dir = string(args.OptionArg());
-            } else {
-                _tprintf(_T("-d option requires a directory name.\n"));
-                return 1;
+            case OPT_FILES:
+            {
+                if (args.OptionArg() != NULL) {
+                    file = string(args.OptionArg());
+                } else {
+                    _tprintf(_T("--filename option requires a filename.\n"));
+                    return 1;
+                }
+                break;
             }
-            break;
-        case OPT_CREATE:
-            if (mode != NONE) { NoMultiMode(argv); return 1; }
-            mode = CREATE;
-            break;
-        case OPT_EXTRACT:
-            if (mode != NONE) { NoMultiMode(argv); return 1; }
-            mode = EXTRACT;
-            break;
-        default:
-            if (args.OptionArg()) {
-                _tprintf(_T("option: %2d, text: '%s', arg: '%s'\n"),
-                    args.OptionId(), args.OptionText(), args.OptionArg());
+            case OPT_MIX:
+            {
+                if (args.OptionArg() != NULL) {
+                    input_mixfile = string(args.OptionArg());
+                } else {
+                    _tprintf(_T("--mix option requires a mix file.\n"));
+                    return 1;
+                }
+                break;
             }
-            else {
-                _tprintf(_T("option: %2d, text: '%s'\n"),
-                    args.OptionId(), args.OptionText());
+            case OPT_DIR:
+            {
+                if (args.OptionArg() != NULL) {
+                    dir = string(args.OptionArg());
+                } else {
+                    _tprintf(_T("--directory option requires a directory name.\n"));
+                    return 1;
+                }
+                break;
             }
-            break;
+            case OPT_CREATE:
+            {
+                if (mode != NONE) { NoMultiMode(argv); return 1; }
+                mode = CREATE;
+                break;
+            }
+            case OPT_EXTRACT:
+            {
+                if (mode != NONE) { NoMultiMode(argv); return 1; }
+                mode = EXTRACT;
+                break;
+            }
+            case OPT_LIST:
+            {
+                if (mode != NONE) { NoMultiMode(argv); return 1; }
+                mode = LIST;
+                break;
+            }
+            default:
+            {
+                if (args.OptionArg()) {
+                    _tprintf(_T("option: %2d, text: '%s', arg: '%s'\n"),
+                        args.OptionId(), args.OptionText(), args.OptionArg());
+                }
+                else {
+                    _tprintf(_T("option: %2d, text: '%s'\n"),
+                        args.OptionId(), args.OptionText());
+                }
+                break;
+            }
         }
     }
     
-    cout << input_mixfile << endl;
-    MixFile in_file(findGMD(getProgramDir(program_path.c_str()), user_home_dir));
-    if (!in_file.open(input_mixfile)){
-        cout << "Cannot open specified mix file" << endl;
-        return 1;
+    if (input_mixfile == ""){
+        cout << "You must specify --mix MIXFILE to operate on." << endl;
     }
-    
-    cout << in_file.printFileList(1);
     
     switch(mode) {
-    case EXTRACT:
-        if (dir != "") {
-            cout << input_mixfile << "\nExtract to dir " << dir << endl;
-            in_file.extractAll(dir);
+        case EXTRACT:
+        {
+            MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
+                            user_home_dir));
+
+            if (!in_file.open(input_mixfile)){
+                cout << "Cannot open specified mix file" << endl;
+                return 1;
+            }
+            
+            if (!Extraction(in_file, file, dir, file_id)) {
+                return 1;
+            }
             return 0;
-        } else {
-            cout << input_mixfile << "\nExtract to current dir" << endl;
-            in_file.extractAll("./");
-            return 0;
+            break;
         }
-        break;
-    default:
-        cout << "command switch default, this shouldn't happen!!" << endl;
-        return 1;
+        case LIST:
+        {
+            MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
+                            user_home_dir));
+
+            if (!in_file.open(input_mixfile)){
+                cout << "Cannot open specified mix file" << endl;
+                return 1;
+            }
+            
+            cout << in_file.printFileList(1);
+        }
+        default:
+        {
+            cout << "command switch default, this shouldn't happen!!" << endl;
+            return 1;
+        }
     }
     
     return 0;
 }
-
