@@ -41,7 +41,7 @@
 using namespace std;
 
 enum { OPT_HELP, OPT_EXTRACT, OPT_CREATE, OPT_GAME, OPT_FILES, OPT_DIR,
-       OPT_LIST, OPT_MIX };
+       OPT_LIST, OPT_MIX, OPT_ID };
 typedef enum { NONE, EXTRACT, CREATE, ADD, REMOVE, LIST } t_mixmode;
 
 //get program directory from argv[0]
@@ -102,8 +102,8 @@ void ShowHelp(TCHAR** argv)
             " [--mode] (--file FILE) (--directory DIR) (--game "
             "[game_td|game_ra|game_ts]) [--mix MIXFILE]\n" << endl;
     cout << "Modes:\n" << endl;
-    cout << "--extract" << endl;
-    cout << "Extracts the contents of the specified mix file to the current "
+    cout << "--extract\n"
+            "Extracts the contents of the specified mix file to the current "
             "directory.\n"
             "--file specifies a single file to extract.\n"
             "--directory specifies an alternative directory to extract to.\n"
@@ -111,8 +111,8 @@ void ShowHelp(TCHAR** argv)
             "orignal C&C and Sole Survivor. game_ra covers Redalert and its\n"
             "expansions. game_ts covers Tiberian Sun and Red Alert 2/Yuri's "
             "Revenge.\n" << endl;
-    cout << "--create" << endl;
-    cout << "Creates a new mix file from the contents of the current folder.\n"
+    cout << "--create\n"
+            "Creates a new mix file from the contents of the current folder.\n"
             "--file specifies a single file as the initial file to add to the\n"
             "new mix.\n"
             "--directory specifies an alternative directory to create mix from.\n"
@@ -120,8 +120,8 @@ void ShowHelp(TCHAR** argv)
             "orignal C&C and Sole Survivor. game_ra covers Redalert and its\n"
             "expansions. game_ts covers Tiberian Sun and Red Alert 2/Yuri's "
             "Revenge.\n" << endl;
-    cout << "--list" << endl;
-    cout << "Lists the contents of the specified mix file.\n" 
+    cout << "--list\n"
+            "Lists the contents of the specified mix file.\n" 
             "--game specified the game the mix is from, game_td covers the\n"
             "orignal C&C and Sole Survivor. game_ra covers Redalert and its\n"
             "expansions. game_ts covers Tiberian Sun and Red Alert 2/Yuri's "
@@ -133,6 +133,21 @@ inline void NoMultiMode(TCHAR** argv)
 {
     _tprintf(_T("You cannot specify more than one mode at once.\n"));
     ShowUsage(argv);
+}
+
+//convert string we got for ID to uint32_t
+//This converts a text hex string to a number, its not to hash the filename.
+uint32_t StringToID(string in_string)
+{
+    if (in_string.size() > 8) return 0;
+    
+    char* p;
+    uint32_t n = strtoul( in_string.c_str(), &p, 16 ); 
+    if ( * p != 0 ) {  
+    	return 0;
+    }    else {  
+    	return n;
+    }
 }
 
 bool Extraction(MixFile& in_file, string filename, string outdir, uint32_t id)
@@ -164,18 +179,54 @@ bool Extraction(MixFile& in_file, string filename, string outdir, uint32_t id)
     }
 }
 
+//Return a string of the home dir path
+string GetHomeDir()
+{
+    char* tmp;
+    string rv;
+    
+    #ifdef WINDOWS
+
+    tmp = getenv("HOMEDRIVE");
+    if ( tmp == NULL ) {
+        return "";
+    } else {
+        rv = string(tmp);
+    }
+    
+    tmp = getenv("HOMEPATH");
+    if ( tmp == NULL ) {
+        return "";
+    } else {
+        rv += string(tmp);
+    }
+
+    #else
+
+    tmp = getenv("HOME");
+    if ( tmp == NULL ) {
+        rv = string(getpwuid(getuid())->pw_dir);
+    } else {
+        rv = string(tmp);
+    }
+
+    #endif
+    return rv;
+}
+
 //This specifies the various available command line options
 CSimpleOpt::SOption g_rgOptions[] = {
     { OPT_EXTRACT,  _T("--extract"),      SO_NONE    },
     { OPT_CREATE,   _T("--create"),       SO_NONE    },
     { OPT_LIST,     _T("--list"),         SO_NONE    },
-    { OPT_FILES,    _T("--file"),         SO_REQ_SEP }, // "-f ARG"
-    { OPT_DIR,      _T("--directory"),    SO_REQ_SEP }, // "-d ARG"
-    { OPT_MIX,      _T("--mix"),          SO_REQ_SEP }, // "-d ARG"
-    { OPT_GAME,     _T("--game"),         SO_REQ_SEP }, // "-g ARG"
-    { OPT_HELP,     _T("-?"),             SO_NONE    }, // "-?"
-    { OPT_HELP,     _T("--help"),         SO_NONE    }, // "--help"
-    SO_END_OF_OPTIONS                       // END
+    { OPT_FILES,    _T("--file"),         SO_REQ_SEP },
+    { OPT_ID,       _T("--id"),           SO_REQ_SEP },
+    { OPT_DIR,      _T("--directory"),    SO_REQ_SEP },
+    { OPT_MIX,      _T("--mix"),          SO_REQ_SEP },
+    { OPT_GAME,     _T("--game"),         SO_REQ_SEP },
+    { OPT_HELP,     _T("-?"),             SO_NONE    },
+    { OPT_HELP,     _T("--help"),         SO_NONE    },
+    SO_END_OF_OPTIONS                       
 };
     
 int _tmain(int argc, TCHAR** argv)
@@ -185,29 +236,19 @@ int _tmain(int argc, TCHAR** argv)
         return 0;
     }
     
+    //initialise some variables used later
     uint32_t file_id = 0;
     string file = "";
     string dir = "";
     string input_mixfile = "";
     const string program_path(argv[0]);
-
-//defs to set user home dir. Used to search for settings files.
-#ifdef WINDOWS
-    string user_home_dir = getenv("HOMEDRIVE") + getenv("HOMEPATH");
-#else    
-#ifdef HOME
-    string user_home_dir(getenv("HOME"));
-#else
-    string user_home_dir(getpwuid(getuid())->pw_dir);
-#endif
-#endif
-    
+    string user_home_dir = GetHomeDir();
     t_game game = game_td;
     t_mixmode mode = NONE;
     
     CSimpleOpt args(argc, argv, g_rgOptions);
     
-    //Process the command line args and set some variables
+    //Process the command line args and set the variables
     while (args.Next()) {
         if (args.LastError() != SO_SUCCESS) {
             _tprintf(_T("Invalid argument: %s\n"), args.OptionText());
@@ -227,6 +268,16 @@ int _tmain(int argc, TCHAR** argv)
                     file = string(args.OptionArg());
                 } else {
                     _tprintf(_T("--filename option requires a filename.\n"));
+                    return 1;
+                }
+                break;
+            }
+            case OPT_ID:
+            {
+                if (args.OptionArg() != NULL) {
+                    file_id = StringToID(string(args.OptionArg()));
+                } else {
+                    _tprintf(_T("--id option requires a file id.\n"));
                     return 1;
                 }
                 break;
