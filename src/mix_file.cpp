@@ -370,7 +370,7 @@ string MixFile::printFileList(int flags = 1) {
         if (filenames.empty())
             readFileNames();
 
-        os << setw(35) << setfill(' ') << "FILENAME |";
+        os << setw(15) << setfill(' ') << "FILENAME |";
     }
 
 
@@ -378,7 +378,7 @@ string MixFile::printFileList(int flags = 1) {
 
     for (uint32_t i = 0; i < files.size(); i++) {
         if (flags & 1) {
-            os << setw(33) << setfill(' ') << filenames[i] << " |";
+            os << setw(13) << setfill(' ') << filenames[i] << " |";
         }
         os << " " << setw(8) << setfill('0') << hex << files[i].id << " | " << setw(10) << setfill(' ') << dec << (files[i].offset + dataoffset) << " | " << setw(10) << setfill(' ') << files[i].size << endl;
     }

@@ -67,6 +67,7 @@ static const string getProgramDir(const char* const program_location) {
 }
 
 //search and test a few locations for a global mix database
+//TODO copy gmd if found but not in a home dir config.
 string findGMD(const string program_dir, const string home_dir)
 {
     string gmd_loc = "global mix database.dat";
@@ -367,6 +368,8 @@ int _tmain(int argc, TCHAR** argv)
             }
             
             cout << in_file.printFileList(1);
+            return 0;
+            break;
         }
         default:
         {
