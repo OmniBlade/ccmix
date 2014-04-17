@@ -10,7 +10,8 @@
 #include "Ccrc.h"
 #include <iomanip>
 #include <algorithm>
-#include <cctype>  
+#include <cctype>
+#include <sstream>
 #include "CBlowfish.h"
 #include "mix_dexoder.h"
 
@@ -39,13 +40,16 @@ MixFile::MixFile(const string gmdFile) {
     //gmdFile.append(dsprt);
     //gmdFile.append(gmd);
     this->dataoffset = 0;
-    mixdb = NULL;
+    //mixdb = NULL;
     m_has_checksum = false;
     m_is_encrypted = false;
-    globaldb = new MixData(gmdFile);
+    //globaldb = new MixData(gmdFile);
+    readGlobalMixDb(gmdFile);
 }
 
 MixFile::~MixFile() {
+    //delete name_map;
+    //name_map = NULL;
     fh.close();
 }
 
@@ -132,6 +136,14 @@ bool MixFile::open(const std::string path, t_game openGame) {
         fh.seekg(6);
         readIndex();
     }
+    
+    //name_map = new std::map<uint32_t, string>;
+    
+    for (std::vector<std::string>::iterator it=filenamesdb.begin(); 
+         it != filenamesdb.end(); it++) {
+        name_map.insert(std::pair<uint32_t,string>(getID(mixGame, *it), *it));
+    }
+    
     return true;
 }
 
@@ -152,7 +164,7 @@ bool MixFile::readIndex() {
         files.push_back(fheader);
 
         if (fheader.id == 0x366e051f) { // local mix database.dat
-            mixdb = new MixData(&fh, fheader.offset + dataoffset, fheader.size);
+            readLocalMixDb(&fh, fheader.offset + dataoffset, fheader.size);
         }
     }
 
@@ -194,7 +206,7 @@ bool MixFile::readEncryptedIndex() {
         files.push_back(fheader);
 
         if (fheader.id == 0x366e051f) { // local mix database.dat
-            mixdb = new MixData(&fh, fheader.offset + dataoffset, fheader.size);
+            readLocalMixDb(&fh, fheader.offset + dataoffset, fheader.size);
         }
 
     }
@@ -218,8 +230,8 @@ bool MixFile::checkFileName(string fname) {
 bool MixFile::extractAll(std::string outPath, bool withFileNames) {
     int i;
 
-    vector<string> filenamesdb;
-    vector<string> filenamesdb_local;
+    //vector<string> filenamesdb;
+    //vector<string> filenamesdb_local;
 
     char buffer[16];
 
@@ -228,20 +240,31 @@ bool MixFile::extractAll(std::string outPath, bool withFileNames) {
 
 
     // get filenames
-    filenamesdb = globaldb->getFileNames();
-    if (mixdb)
-        filenamesdb_local = mixdb->getFileNames();
-
+    //filenamesdb = globaldb->getFileNames();
+    //if (mixdb)
+    //    filenamesdb_local = mixdb->getFileNames();
+    
+    std::map<uint32_t,std::string>::iterator it;
+    
     for (i = 0; i < mix_head.c_files; i++) {
         bool found = false;
-        for (uint32_t j = 0; j < filenamesdb.size(); j++) {
+        
+        it = name_map.find(files[i].id);
+        
+        if (it != name_map.end()){
+            extractFile(files[i].id, outPath + "/" + it->second);
+            found = true;
+        }
+        
+        /*for (uint32_t j = 0; j < filenamesdb.size(); j++) {
             if (getID(mixGame, filenamesdb[j]) == files[i].id) {
                 extractFile(files[i].id, outPath + "/" + filenamesdb[j]);
                 found = true;
                 break;
             }
-        }
-        if (mixdb && !found) {
+        }*/
+        //mixdb and local merged for extraction, removing MixData object
+        /*if (mixdb && !found) {
             for (uint32_t j = 0; j < filenamesdb_local.size(); j++) {
                 if (getID(mixGame, filenamesdb_local[j]) == files[i].id) {
                     extractFile(files[i].id, outPath + "/" + filenamesdb_local[j]);
@@ -250,7 +273,7 @@ bool MixFile::extractAll(std::string outPath, bool withFileNames) {
                 }
 
             }
-        }
+        }*/
         if (!found) {
             sprintf(buffer, "%x", files[i].id);
             extractFile(files[i].id, outPath + "/unknown_" + string(buffer));
@@ -318,30 +341,42 @@ vector<string> MixFile::getFileNames() {
 bool MixFile::readFileNames() {
     int i;
 
-    vector<string> filenamesdb;
-    vector<string> filenamesdb_local;
+    //vector<string> filenamesdb;
+    //vector<string> filenamesdb_local;
 
     /* read global and local database of filenames */
-    filenamesdb = globaldb->getFileNames();
-    if (mixdb)
-        filenamesdb_local = mixdb->getFileNames();
+    //filenamesdb = globaldb->getFileNames();
+    //if (mixdb)
+    //    filenamesdb_local = mixdb->getFileNames();
 
     /* clear previous filenames list */
     filenames.clear();
-
+    
+    //create iterator for holding results of searching map
+    std::map<uint32_t,std::string>::iterator it;
+    
     for (i = 0; i < mix_head.c_files; i++) {
         bool found = false;
-
-        /* try filenames from global database */
+        
+        it = name_map.find(files[i].id);
+        
+        if (it != name_map.end()){
+            filenames.push_back(it->second);
+            found = true;
+        }
+        
+        
+        /* try filenames from global database
         for (uint32_t j = 0; j < filenamesdb.size(); j++) {
             if (getID(mixGame, filenamesdb[j]) == files[i].id) {
                 filenames.push_back(filenamesdb[j]);
                 found = true;
                 break;
             }
-        }
-
-        /* try filenames from local database */
+        }*/
+        
+        //local mix now merged in on file open
+        /* try filenames from local database
         if (mixdb && !found) {
             for (uint32_t j = 0; j < filenamesdb_local.size(); j++) {
                 if (getID(mixGame, filenamesdb_local[j]) == files[i].id) {
@@ -351,7 +386,7 @@ bool MixFile::readFileNames() {
                 }
 
             }
-        }
+        }*/
 
         /* file does not match filename in any database */
         if (!found) {
@@ -364,7 +399,7 @@ bool MixFile::readFileNames() {
 }
 
 string MixFile::printFileList(int flags = 1) {
-    stringstream os;
+    std::stringstream os;
 
     if (flags & 1) {
         if (filenames.empty())
@@ -414,9 +449,59 @@ void MixFile::close() {
     fh.close();
     filenames.clear();
     files.clear();
-    delete mixdb;
-    mixdb = NULL;
+//    delete mixdb;
+//    mixdb = NULL;
     dataoffset = 0;
     m_has_checksum = false;
     m_is_encrypted = false;    
+}
+
+void MixFile::readLocalMixDb(std::ifstream * fh, uint32_t offset, uint32_t size)
+{
+    char* data = new char[size];
+    fh->seekg(offset, ios_base::beg);
+    fh->read(data, size);
+
+    std::vector<string> localfilenames = split(data, size);
+    filenamesdb.insert(filenamesdb.end(), localfilenames.begin(), 
+                       localfilenames.end());
+}
+
+void MixFile::readGlobalMixDb(std::string filePath)
+{
+    ifstream fh;
+    uint32_t begin, end, size;
+    fh.open(filePath.c_str(), ios::binary);
+    if (fh.rdstate() & ifstream::failbit) {
+        fh.clear();
+        cout << "Unable to load global mix database! (" << filePath << ")" << endl;
+    }
+    
+    /* get file size */
+    begin = fh.tellg();
+    fh.seekg(0, ios::end);
+    end = fh.tellg();
+    size = end - begin;
+
+    char* data = new char[size];
+
+    fh.seekg(0);
+    fh.read(data, size);
+
+    filenamesdb = MixFile::split(data, size);
+}
+
+std::vector<std::string> MixFile::split(const char * data, int size) {
+    int i = 0;
+    std::vector<std::string> elems;
+    const char * dataItem = data;
+    while (i < size) {
+        if (strlen(dataItem)) {
+            elems.push_back(dataItem);
+        }
+        i += (strlen(dataItem) + 1);
+        dataItem = &data[i];
+    }
+
+    return elems;
 }

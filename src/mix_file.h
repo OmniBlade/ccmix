@@ -10,7 +10,8 @@
 #include <string>
 #include <fstream>
 #include <vector>
-#include "MixData.h"
+#include <map>
+//#include "MixData.h"
 
 #ifdef _MSC_VER
 #include "win32/stdint.h"
@@ -184,19 +185,24 @@ protected:
     bool readEncryptedIndex();
     bool readFileNames();
     bool extractAllFast(std::string outPath = ".");
+    std::vector<std::string> split(const char * data, int size); //split mix db
+    void readLocalMixDb(std::ifstream * fh, uint32_t offset, uint32_t size);
+    void readGlobalMixDb(std::string filePath);
     t_mix_header mix_head; // mix file header
     std::vector<t_mix_index_entry> files; // list of file headers
     std::vector<std::string> filenames; // file names
+    std::vector<std::string> filenamesdb;
     bool m_is_encrypted;
     bool m_has_checksum;
-    MixData * mixdb; // local mix database.dat
-    MixData * globaldb; // global filenames database
+    //MixData * mixdb; // local mix database.dat
+    //MixData * globaldb; // global filenames database
     int32_t dataoffset;
     std::ifstream fh; // file handler
     char key_source[80];
     char key[56];
     char decrypt_buffer[8]; // begining of next index read at the end of last block
     int32_t decrypt_size; // size of valid buffer data
+    std::map<uint32_t, std::string> name_map;
     
     t_game mixGame;
 };
