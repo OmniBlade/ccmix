@@ -138,6 +138,7 @@ inline void NoMultiMode(TCHAR** argv)
 
 //convert string we got for ID to uint32_t
 //This converts a text hex string to a number, its not to hash the filename.
+//That is a method of MixFile.
 uint32_t StringToID(string in_string)
 {
     if (in_string.size() > 8) return 0;
@@ -151,6 +152,7 @@ uint32_t StringToID(string in_string)
     }
 }
 
+//Function handles the different ways to extract files from a mix.
 bool Extraction(MixFile& in_file, string filename, string outdir, uint32_t id)
 {
     if (outdir == "") outdir = "./";
@@ -336,6 +338,7 @@ int _tmain(int argc, TCHAR** argv)
         }
     }
     
+    //check if we got told a mix file to do something with.
     if (input_mixfile == ""){
         cout << "You must specify --mix MIXFILE to operate on." << endl;
     }
@@ -346,7 +349,7 @@ int _tmain(int argc, TCHAR** argv)
             MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
                             user_home_dir));
 
-            if (!in_file.open(input_mixfile)){
+            if (!in_file.open(input_mixfile, game)){
                 cout << "Cannot open specified mix file" << endl;
                 return 1;
             }
@@ -362,7 +365,7 @@ int _tmain(int argc, TCHAR** argv)
             MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
                             user_home_dir));
 
-            if (!in_file.open(input_mixfile)){
+            if (!in_file.open(input_mixfile, game)){
                 cout << "Cannot open specified mix file" << endl;
                 return 1;
             }
