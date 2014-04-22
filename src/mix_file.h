@@ -102,6 +102,25 @@ typedef enum
 const int32_t mix_checksum = 0x00010000;
 const int32_t mix_encrypted = 0x00020000;
 
+/**
+ * @brief Mix Databases.
+ * 
+ * Global Mix Database holds mappings between file id's and their names as well
+ * as additional details about the file such as what it represents in game. The 
+ * file consists of a little endian uint32_t count of how many entries are in 
+ * the DB followed by 0 seperated strings of alternating filenames and
+ * descriptions.
+ * 
+ * 
+ */
+struct t_id_data {
+    std::string name;
+    std::string description;
+};
+
+const char xcc_id[] = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x19\x80";
+
+typedef std::map<uint32_t, t_id_data> t_id_datamap;
 
 /**
  * @brief mix file controller
@@ -185,7 +204,6 @@ protected:
     bool readEncryptedIndex();
     bool readFileNames();
     bool extractAllFast(std::string outPath = ".");
-    std::vector<std::string> split(const char * data, int size); //split mix db
     void readLocalMixDb(std::ifstream * fh, uint32_t offset, uint32_t size);
     void readGlobalMixDb(std::string filePath);
     t_mix_header mix_head; // mix file header
@@ -194,15 +212,13 @@ protected:
     std::vector<std::string> filenamesdb;
     bool m_is_encrypted;
     bool m_has_checksum;
-    //MixData * mixdb; // local mix database.dat
-    //MixData * globaldb; // global filenames database
     int32_t dataoffset;
     std::ifstream fh; // file handler
     char key_source[80];
     char key[56];
     char decrypt_buffer[8]; // begining of next index read at the end of last block
     int32_t decrypt_size; // size of valid buffer data
-    std::map<uint32_t, std::string> name_map;
+    t_id_datamap name_map;
     
     t_game mixGame;
 };

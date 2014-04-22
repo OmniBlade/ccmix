@@ -35,21 +35,14 @@ void t_mix_header_copy(t_mix_header* header, char * data) {
 
 //MixFile::MixFile(const char * pDirectory, const string gmdFile) {
 MixFile::MixFile(const string gmdFile) {
-    //string gmdFile = pDirectory;
-    //char dsprt[2] = {DIR_SEPARATOR, '\0'};
-    //gmdFile.append(dsprt);
-    //gmdFile.append(gmd);
     this->dataoffset = 0;
     //mixdb = NULL;
     m_has_checksum = false;
     m_is_encrypted = false;
-    //globaldb = new MixData(gmdFile);
     readGlobalMixDb(gmdFile);
 }
 
 MixFile::~MixFile() {
-    //delete name_map;
-    //name_map = NULL;
     fh.close();
 }
 
@@ -137,18 +130,10 @@ bool MixFile::open(const std::string path, t_game openGame) {
         readIndex();
     }
     
-    //name_map = new std::map<uint32_t, string>;
-    
-    for (std::vector<std::string>::iterator it=filenamesdb.begin(); 
-         it != filenamesdb.end(); it++) {
-        name_map.insert(std::pair<uint32_t,string>(getID(mixGame, *it), *it));
-    }
-    
     return true;
 }
 
 bool MixFile::readIndex() {
-    int i;
     t_mix_index_entry fheader;
 
     if (!fh.is_open())
@@ -158,7 +143,7 @@ bool MixFile::readIndex() {
         return readEncryptedIndex();
 
 
-    for (i = 0; i < mix_head.c_files; i++) {
+    for (int i = 0; i < mix_head.c_files; i++) {
         fh.read((char*) &fheader, sizeof (fheader));
         dataoffset += sizeof (fheader);
         files.push_back(fheader);
@@ -228,68 +213,38 @@ bool MixFile::checkFileName(string fname) {
 }
 
 bool MixFile::extractAll(std::string outPath, bool withFileNames) {
-    int i;
-
-    //vector<string> filenamesdb;
-    //vector<string> filenamesdb_local;
 
     char buffer[16];
 
     if (!withFileNames)
         return extractAllFast(outPath);
-
-
-    // get filenames
-    //filenamesdb = globaldb->getFileNames();
-    //if (mixdb)
-    //    filenamesdb_local = mixdb->getFileNames();
     
-    std::map<uint32_t,std::string>::iterator it;
+    t_id_datamap::iterator it;
     
-    for (i = 0; i < mix_head.c_files; i++) {
+    for (int i = 0; i < mix_head.c_files; i++) {
         bool found = false;
         
         it = name_map.find(files[i].id);
         
         if (it != name_map.end()){
-            extractFile(files[i].id, outPath + "/" + it->second);
+            extractFile(files[i].id, outPath + "/" + it->second.name);
             found = true;
         }
         
-        /*for (uint32_t j = 0; j < filenamesdb.size(); j++) {
-            if (getID(mixGame, filenamesdb[j]) == files[i].id) {
-                extractFile(files[i].id, outPath + "/" + filenamesdb[j]);
-                found = true;
-                break;
-            }
-        }*/
-        //mixdb and local merged for extraction, removing MixData object
-        /*if (mixdb && !found) {
-            for (uint32_t j = 0; j < filenamesdb_local.size(); j++) {
-                if (getID(mixGame, filenamesdb_local[j]) == files[i].id) {
-                    extractFile(files[i].id, outPath + "/" + filenamesdb_local[j]);
-                    found = true;
-                    break;
-                }
-
-            }
-        }*/
         if (!found) {
             sprintf(buffer, "%x", files[i].id);
             extractFile(files[i].id, outPath + "/unknown_" + string(buffer));
         }
-
     }
-
 
     return true;
 }
 
 bool MixFile::extractAllFast(std::string outPath) {
-    int i;
+    
     char buffer[16];
 
-    for (i = 0; i < mix_head.c_files; i++) {
+    for (int i = 0; i < mix_head.c_files; i++) {
         sprintf(buffer, "%x", files[i].id);
         extractFile(files[i].id, outPath + "/unknown_" + string(buffer));
     }
@@ -339,54 +294,23 @@ vector<string> MixFile::getFileNames() {
 }
 
 bool MixFile::readFileNames() {
-    int i;
-
-    //vector<string> filenamesdb;
-    //vector<string> filenamesdb_local;
-
-    /* read global and local database of filenames */
-    //filenamesdb = globaldb->getFileNames();
-    //if (mixdb)
-    //    filenamesdb_local = mixdb->getFileNames();
 
     /* clear previous filenames list */
     filenames.clear();
     
     //create iterator for holding results of searching map
-    std::map<uint32_t,std::string>::iterator it;
+    t_id_datamap::iterator it;
     
-    for (i = 0; i < mix_head.c_files; i++) {
+    for (int i = 0; i < mix_head.c_files; i++) {
         bool found = false;
         
+        cout << files[i].id << endl;
         it = name_map.find(files[i].id);
         
         if (it != name_map.end()){
-            filenames.push_back(it->second);
+            filenames.push_back(it->second.name);
             found = true;
         }
-        
-        
-        /* try filenames from global database
-        for (uint32_t j = 0; j < filenamesdb.size(); j++) {
-            if (getID(mixGame, filenamesdb[j]) == files[i].id) {
-                filenames.push_back(filenamesdb[j]);
-                found = true;
-                break;
-            }
-        }*/
-        
-        //local mix now merged in on file open
-        /* try filenames from local database
-        if (mixdb && !found) {
-            for (uint32_t j = 0; j < filenamesdb_local.size(); j++) {
-                if (getID(mixGame, filenamesdb_local[j]) == files[i].id) {
-                    filenames.push_back(filenamesdb_local[j]);
-                    found = true;
-                    break;
-                }
-
-            }
-        }*/
 
         /* file does not match filename in any database */
         if (!found) {
@@ -461,10 +385,26 @@ void MixFile::readLocalMixDb(std::ifstream * fh, uint32_t offset, uint32_t size)
     char* data = new char[size];
     fh->seekg(offset, ios_base::beg);
     fh->read(data, size);
+    
+    //move pointer past most of header to entry count, total header is 52 bytes.
+    data += 48;
+    
+    //get count of entries
+    int32_t count = *reinterpret_cast<const int32_t*>(data);
+    data += 4;
 
-    std::vector<string> localfilenames = split(data, size);
-    filenamesdb.insert(filenamesdb.end(), localfilenames.begin(), 
-                       localfilenames.end());
+    //retrieve each entry into the struct as a string then push to the map.
+    //relies on string constructor reading to 0;
+    //local mix db doesn't have descriptions.
+    t_id_data id_data;
+    id_data.description = "";
+    while (count--) {
+        //get data and move pointer to next entry
+        id_data.name = data;
+        data += id_data.name.length() + 1;
+        name_map.insert(std::pair<uint32_t,t_id_data>(getID(mixGame,
+                        id_data.name), id_data));
+    }
 }
 
 void MixFile::readGlobalMixDb(std::string filePath)
@@ -482,26 +422,32 @@ void MixFile::readGlobalMixDb(std::string filePath)
     fh.seekg(0, ios::end);
     end = fh.tellg();
     size = end - begin;
-
+    
     char* data = new char[size];
 
     fh.seekg(0);
     fh.read(data, size);
-
-    filenamesdb = MixFile::split(data, size);
-}
-
-std::vector<std::string> MixFile::split(const char * data, int size) {
-    int i = 0;
-    std::vector<std::string> elems;
-    const char * dataItem = data;
-    while (i < size) {
-        if (strlen(dataItem)) {
-            elems.push_back(dataItem);
+    
+    //get 1st 4 bytes as count of entries in db
+    char* data_end = &data[size - 1];
+    int32_t count = *reinterpret_cast<const int32_t*>(data);
+    data += 4;
+    
+    //retrieve each entry into the struct as a string then push to the map.
+    //relies on string constructor reading to 0;
+    t_id_data id_data;
+    while (count--) {
+        //get data and move pointer to next entry
+        id_data.name = data;
+        data += id_data.name.length() + 1;
+        id_data.description = data;
+        data += id_data.description.length() + 1;
+        name_map.insert(std::pair<uint32_t,t_id_data>(getID(mixGame,
+                        id_data.name), id_data));
+        //mix db is several databases on top of one another.
+        if (count < 1 && data < data_end){
+            count = *reinterpret_cast<const int32_t*>(data);
+            data += 4;
         }
-        i += (strlen(dataItem) + 1);
-        dataItem = &data[i];
     }
-
-    return elems;
 }
