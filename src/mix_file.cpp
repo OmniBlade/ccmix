@@ -298,13 +298,17 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     uint32_t offset = 0;
     ofstream ofile;
     ifstream ifile;
+    char* buff;
     
     //ensure vectors are clear
     filenames.clear();
     files.clear();
     
+    //set which game we are writing for
+    mixGame = game;
+    
     //make sure we can open the directory
-    if((dp  = opendir(in_dir.c_str())) == NULL) {
+    if((dp = opendir(in_dir.c_str())) == NULL) {
         cout << "Error opening " << in_dir << endl;
         return false;
     }
@@ -314,7 +318,7 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
         lstat(dirp->d_name, &st);
         if(!S_ISDIR(st.st_mode)){
             filenames.push_back(string(dirp->d_name));
-            finfo.id = getID(game, string(dirp->d_name));
+            finfo.id = getID(mixGame, string(dirp->d_name));
             finfo.offset = offset;
             stat((in_dir + DIR_SEPARATOR + dirp->d_name).c_str(), &st);
             finfo.size = st.st_size;
@@ -327,15 +331,66 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     //are we wanting lmd? if so start preparing for it here
     if(with_lmd){
         filenames.push_back(lmd_name);
-        finfo.id = getID(game, lmd_name);
+        finfo.id = getID(mixGame, lmd_name);
         finfo.offset = offset;
         finfo.size = lmdSize();
+        offset += finfo.size;
+        files.push_back(finfo);
     }
     
-    ofile.open(fileName.c_str(), ofstream::binary);
+    if(files.size() != filenames.size()){
+        cout << "Number of file header entries does not match number of"
+                "filenames to add" << endl;
+        return false;
+    }
+    
+    //time to start writing our new file
+    ofile.open(fileName.c_str(), ofstream::binary|ofstream::trunc);
+    
+    if(!ofile.is_open()){
+        cout << "Failed to create empty file" << endl;
+        return false;
+    }
+    
+    //write a header
+    if(mixGame == game_td){
+        if(!writeOldHeader(ofile, reinterpret_cast<int16_t> files.size(), offset))
+            return false;
+    } else {
+        if(!writeNewHeader(ofile)) return false;
+    }
+    
+    //write the body
+    for(int i = 0; i < filenames.size(); i++){
+        //last entry is lmd if with_lmd so break for special handling
+        if(with_lmd && i == filenames.size() - 1) break;
+        
+        buff = new char[files[i].size]
+        ifile.open((in_dir + DIR_SEPARATOR + filenames[i]).c_str(), 
+                    ifstream::binary);
+        ifile.read(buff, files[i].size);
+        ifile.close();
+        ofile.write(buff, files[i].size);
+        delete[] buff;
+        buff = 0;
+    }
+    
+    //handle lmd writing here.
+    if(with_lmd){
+        continue;
+    }
     
     ofile.close();
     
+    return true;
+}
+
+bool MixFile::writeOldHeader(ofstream& out, int16_t c_files, int32_t size) {
+    out.write(reinterpret_cast <const char*> (&c_files), sizeof(c_files));
+    out.write(reinterpret_cast <const char*> (&size), sizeof(size));
+    for(int i = 0; i < files.size(); i++) {
+        out.write(reinterpret_cast <const char*> (&files[i]), sizeof(t_mix_index_entry));
+    }
     return true;
 }
 

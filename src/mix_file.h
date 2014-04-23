@@ -125,6 +125,8 @@ struct t_id_data {
 
 const char xcc_id[] = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x19\x80";
 
+const std::string lmd_name = "local mix database.dat"; 
+
 typedef std::map<uint32_t, t_id_data> t_id_datamap;
 
 /**
@@ -224,11 +226,12 @@ protected:
     bool extractAllFast(std::string outPath = ".");
     void readLocalMixDb(std::ifstream * fh, uint32_t offset, uint32_t size);
     void readGlobalMixDb(std::string filePath);
+    bool writeOldHeader(std::ofstream& out, int16_t c_files, int32_t size);
+    bool writeNewHeader(std::ofstream& out);
     uint32_t lmdSize();
     t_mix_header mix_head; // mix file header
     std::vector<t_mix_index_entry> files; // list of file headers
     std::vector<std::string> filenames; // file names
-    std::vector<std::string> filenamesdb;
     bool m_is_encrypted;
     bool m_has_checksum;
     int32_t dataoffset;
@@ -238,7 +241,6 @@ protected:
     char decrypt_buffer[8]; // begining of next index read at the end of last block
     int32_t decrypt_size; // size of valid buffer data
     t_id_datamap name_map;
-    const std::string lmd_name = "local mix database.dat";
     t_game mixGame;
 };
 
