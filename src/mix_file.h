@@ -107,9 +107,14 @@ const int32_t mix_encrypted = 0x00020000;
  * 
  * Global Mix Database holds mappings between file id's and their names as well
  * as additional details about the file such as what it represents in game. The 
- * file consists of a little endian uint32_t count of how many entries are in 
- * the DB followed by 0 seperated strings of alternating filenames and
- * descriptions.
+ * file consists of several sections that contain a little endian uint32_t count
+ * of how many entries are in the DB followed by 0 separated strings of 
+ * alternating filenames and descriptions. The ID's themselves are generated on
+ * loading database.
+ * 
+ * Local Mix Databases hold just filenames but have a more complicated header.
+ * It consists first of a 32 byte string, the xcc_id which appears to be a kind
+ * of digital signature for the XCC tools author.
  * 
  * 
  */
@@ -163,8 +168,21 @@ public:
      * @return true if extraction successful
      */
     bool extractAll(std::string outPath = ".", bool withFileNames = true);
+     /**
+     * @brief Creates a new mix file
+     * @param fileName name and path of mix to create
+     * @param infiles vector containing files to add to the new mix
+     * @param game game the mix should be compatible with
+     * @param in_dir location we should create the new mix at
+     * @param with_lmd should we generate a local mix database for this mix
+     * @param encrypted should we encrypt the header of this mix
+     * @return true if creation is successful
+     */
+    bool createMix(std::string fileName, std::string in_dir, 
+                   t_game game = game_td, bool with_lmd = false, 
+                   bool encrypted = false);
     /**
-     * @brief chcecks, if file is present in the archive
+     * @brief checks, if file is present in the archive
      * @param fname file name
      * @return true if present
      */
@@ -206,6 +224,7 @@ protected:
     bool extractAllFast(std::string outPath = ".");
     void readLocalMixDb(std::ifstream * fh, uint32_t offset, uint32_t size);
     void readGlobalMixDb(std::string filePath);
+    uint32_t lmdSize();
     t_mix_header mix_head; // mix file header
     std::vector<t_mix_index_entry> files; // list of file headers
     std::vector<std::string> filenames; // file names
@@ -219,7 +238,7 @@ protected:
     char decrypt_buffer[8]; // begining of next index read at the end of last block
     int32_t decrypt_size; // size of valid buffer data
     t_id_datamap name_map;
-    
+    const std::string lmd_name = "local mix database.dat";
     t_game mixGame;
 };
 

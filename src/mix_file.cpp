@@ -14,6 +14,9 @@
 #include <sstream>
 #include "CBlowfish.h"
 #include "mix_dexoder.h"
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 using namespace std;
 
@@ -48,7 +51,7 @@ MixFile::~MixFile() {
 
 uint32_t MixFile::getID(t_game game, string name) {
     transform(name.begin(), name.end(), name.begin(),
-            (int(*)(int)) std::toupper); // convert to uppercase
+            (int(*)(int)) toupper); // convert to uppercase
     if (game != game_ts) { // for TD and RA
         int i = 0;
         uint32_t id = 0;
@@ -80,7 +83,7 @@ uint32_t MixFile::getID(t_game game, string name) {
     }
 }
 
-bool MixFile::open(const std::string path, t_game openGame) {
+bool MixFile::open(const string path, t_game openGame) {
     if (fh.is_open())
         close();
 
@@ -203,7 +206,7 @@ bool MixFile::readEncryptedIndex() {
 
 bool MixFile::checkFileName(string fname) {
     transform(fname.begin(), fname.end(), fname.begin(),
-            (int(*)(int)) std::toupper);
+            (int(*)(int)) toupper);
     uint32_t fileID = getID(mixGame, fname);
     for (uint32_t i = 0; i < files.size(); i++) {
         if (files[i].id == fileID)
@@ -212,7 +215,7 @@ bool MixFile::checkFileName(string fname) {
     return false;
 }
 
-bool MixFile::extractAll(std::string outPath, bool withFileNames) {
+bool MixFile::extractAll(string outPath, bool withFileNames) {
 
     char buffer[16];
 
@@ -240,7 +243,7 @@ bool MixFile::extractAll(std::string outPath, bool withFileNames) {
     return true;
 }
 
-bool MixFile::extractAllFast(std::string outPath) {
+bool MixFile::extractAllFast(string outPath) {
     
     char buffer[16];
 
@@ -251,7 +254,7 @@ bool MixFile::extractAllFast(std::string outPath) {
     return true;
 }
 
-bool MixFile::extractFile(uint32_t fileID, std::string outPath) {
+bool MixFile::extractFile(uint32_t fileID, string outPath) {
     ofstream oFile;
     uint32_t f_offset = 0, f_size = 0;
     char * buffer;
@@ -282,8 +285,69 @@ bool MixFile::extractFile(uint32_t fileID, std::string outPath) {
     return true;
 }
 
-bool MixFile::extractFile(std::string fileName, std::string outPath) {
+bool MixFile::extractFile(string fileName, string outPath) {
     return extractFile(getID(mixGame, fileName), outPath);
+}
+
+bool MixFile::createMix(string fileName, string in_dir, t_game game, 
+                        bool with_lmd, bool encrypted) {
+    DIR* dp;
+    struct dirent *dirp;
+    struct stat st;
+    t_mix_index_entry finfo;
+    uint32_t offset = 0;
+    ofstream ofile;
+    ifstream ifile;
+    
+    //ensure vectors are clear
+    filenames.clear();
+    files.clear();
+    
+    //make sure we can open the directory
+    if((dp  = opendir(in_dir.c_str())) == NULL) {
+        cout << "Error opening " << in_dir << endl;
+        return false;
+    }
+    
+    //iterate through entries in directory, ignoring directories
+    while ((dirp = readdir(dp)) != NULL) {
+        lstat(dirp->d_name, &st);
+        if(!S_ISDIR(st.st_mode)){
+            filenames.push_back(string(dirp->d_name));
+            finfo.id = getID(game, string(dirp->d_name));
+            finfo.offset = offset;
+            stat((in_dir + DIR_SEPARATOR + dirp->d_name).c_str(), &st);
+            finfo.size = st.st_size;
+            offset += finfo.size;
+            files.push_back(finfo);
+        }
+    }
+    closedir(dp);
+    
+    //are we wanting lmd? if so start preparing for it here
+    if(with_lmd){
+        filenames.push_back(lmd_name);
+        finfo.id = getID(game, lmd_name);
+        finfo.offset = offset;
+        finfo.size = lmdSize();
+    }
+    
+    ofile.open(fileName.c_str(), ofstream::binary);
+    
+    ofile.close();
+    
+    return true;
+}
+
+//calculate the size of an lmd from filenames
+uint32_t MixFile::lmdSize() {
+    //lmd header is 52 bytes big
+    uint32_t rv = 52;
+    for (int i = 0; i < filenames.size(); i++){
+        rv += filenames[i].size();
+    }
+    //add number of files to account for null termination
+    return rv + filenames.size();
 }
 
 vector<string> MixFile::getFileNames() {
@@ -323,7 +387,7 @@ bool MixFile::readFileNames() {
 }
 
 string MixFile::printFileList(int flags = 1) {
-    std::stringstream os;
+    stringstream os;
 
     if (flags & 1) {
         if (filenames.empty())
@@ -345,7 +409,7 @@ string MixFile::printFileList(int flags = 1) {
     return os.str();
 }
 
-bool MixFile::decrypt(std::string outPath) {
+bool MixFile::decrypt(string outPath) {
     ofstream ofh;
     char * buff;
     if (!m_is_encrypted)
@@ -380,7 +444,7 @@ void MixFile::close() {
     m_is_encrypted = false;    
 }
 
-void MixFile::readLocalMixDb(std::ifstream * fh, uint32_t offset, uint32_t size)
+void MixFile::readLocalMixDb(ifstream * fh, uint32_t offset, uint32_t size)
 {
     char* data = new char[size];
     fh->seekg(offset, ios_base::beg);
@@ -402,12 +466,12 @@ void MixFile::readLocalMixDb(std::ifstream * fh, uint32_t offset, uint32_t size)
         //get data and move pointer to next entry
         id_data.name = data;
         data += id_data.name.length() + 1;
-        name_map.insert(std::pair<uint32_t,t_id_data>(getID(mixGame,
+        name_map.insert(pair<uint32_t,t_id_data>(getID(mixGame,
                         id_data.name), id_data));
     }
 }
 
-void MixFile::readGlobalMixDb(std::string filePath)
+void MixFile::readGlobalMixDb(string filePath)
 {
     ifstream fh;
     uint32_t begin, end, size;
@@ -442,7 +506,7 @@ void MixFile::readGlobalMixDb(std::string filePath)
         data += id_data.name.length() + 1;
         id_data.description = data;
         data += id_data.description.length() + 1;
-        name_map.insert(std::pair<uint32_t,t_id_data>(getID(mixGame,
+        name_map.insert(pair<uint32_t,t_id_data>(getID(mixGame,
                         id_data.name), id_data));
         //mix db is several databases on top of one another.
         if (count < 1 && data < data_end){
