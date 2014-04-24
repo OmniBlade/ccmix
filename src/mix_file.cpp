@@ -50,6 +50,9 @@ MixFile::~MixFile() {
 }
 
 uint32_t MixFile::getID(t_game game, string name) {
+    /*if(name == lmd_name){
+        return 0x366e051f;
+    }*/
     transform(name.begin(), name.end(), name.begin(),
             (int(*)(int)) toupper); // convert to uppercase
     if (game != game_ts) { // for TD and RA
@@ -298,7 +301,8 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     uint32_t offset = 0;
     ofstream ofile;
     ifstream ifile;
-    char* buff;
+    vector<uint32_t> id_list;
+    //char* buff;
     
     //ensure vectors are clear
     filenames.clear();
@@ -315,8 +319,15 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     
     //iterate through entries in directory, ignoring directories
     while ((dirp = readdir(dp)) != NULL) {
-        lstat(dirp->d_name, &st);
+        cout << dirp->d_name << " is current file" << endl;
+        lstat((in_dir + DIR_SEPARATOR + dirp->d_name).c_str(), &st);
         if(!S_ISDIR(st.st_mode)){
+            cout << dirp->d_name << " is not a directory" << endl;
+            if(std::find(id_list.begin(), id_list.end(), 
+               getID(mixGame, string(dirp->d_name))) != id_list.end()) {
+                cout << "Skipping " << dirp->d_name << ", ID Collision" << endl;
+                continue;
+            } 
             filenames.push_back(string(dirp->d_name));
             finfo.id = getID(mixGame, string(dirp->d_name));
             finfo.offset = offset;
@@ -328,10 +339,12 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     }
     closedir(dp);
     
+    cout << "Finished getting file info and closed dirent" << endl;
+    
     //are we wanting lmd? if so start preparing for it here
     if(with_lmd){
         filenames.push_back(lmd_name);
-        finfo.id = getID(mixGame, lmd_name);
+        finfo.id = 0x366e051f;  //always this value??
         finfo.offset = offset;
         finfo.size = lmdSize();
         offset += finfo.size;
@@ -353,31 +366,28 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     }
     
     //write a header
-    if(mixGame == game_td){
-        if(!writeOldHeader(ofile, reinterpret_cast<int16_t> files.size(), offset))
-            return false;
-    } else {
-        if(!writeNewHeader(ofile)) return false;
-    }
     
+    if(!writeHeader(ofile, files.size(), offset))
+        return false;
+    
+    if(!writeIndex(ofile, files.size(), offset))
+        return false;
+    
+    cout << "Writing the body now" << endl;
     //write the body
     for(int i = 0; i < filenames.size(); i++){
         //last entry is lmd if with_lmd so break for special handling
         if(with_lmd && i == filenames.size() - 1) break;
-        
-        buff = new char[files[i].size]
+
         ifile.open((in_dir + DIR_SEPARATOR + filenames[i]).c_str(), 
                     ifstream::binary);
-        ifile.read(buff, files[i].size);
+        ofile << ifile.rdbuf();
         ifile.close();
-        ofile.write(buff, files[i].size);
-        delete[] buff;
-        buff = 0;
     }
     
     //handle lmd writing here.
     if(with_lmd){
-        continue;
+        writeLmd(ofile);
     }
     
     ofile.close();
@@ -385,12 +395,39 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     return true;
 }
 
-bool MixFile::writeOldHeader(ofstream& out, int16_t c_files, int32_t size) {
+bool MixFile::writeHeader(ofstream& out, int16_t c_files, int32_t size, 
+                          uint32_t flags) {
+    if(mixGame != game_td) {
+        out.write(reinterpret_cast <const char*> (&flags), sizeof(uint32_t));
+    }
     out.write(reinterpret_cast <const char*> (&c_files), sizeof(c_files));
     out.write(reinterpret_cast <const char*> (&size), sizeof(size));
+    
+    return true;
+}
+
+bool MixFile::writeIndex(std::ofstream& out, int16_t c_files, int32_t size){
     for(int i = 0; i < files.size(); i++) {
         out.write(reinterpret_cast <const char*> (&files[i]), sizeof(t_mix_index_entry));
     }
+    return true;
+}
+
+//write an lmd file
+bool MixFile::writeLmd(std::ofstream& out) {
+    uint32_t padded_size[] = {files[files.size() - 1].size, 0, 0, 0, 
+                              filenames.size()};
+    //xcc id
+    out.write(xcc_id, sizeof(xcc_id));
+    cout << "Wrote XCC ID" << endl;
+    //rest of header
+    out.write(reinterpret_cast<const char*> (padded_size), sizeof(padded_size));
+    cout << "Wrote LMD size" << endl;
+    for(int i = 0; i < filenames.size(); i++){
+        cout << "Writing string " << filenames[i] << " to LMD" << endl;
+        out.write(filenames[i].c_str(), filenames[i].size() + 1);
+    }
+    out.put('\0');
     return true;
 }
 
@@ -423,7 +460,7 @@ bool MixFile::readFileNames() {
     for (int i = 0; i < mix_head.c_files; i++) {
         bool found = false;
         
-        cout << files[i].id << endl;
+        //cout << files[i].id << endl;
         it = name_map.find(files[i].id);
         
         if (it != name_map.end()){
@@ -534,6 +571,7 @@ void MixFile::readGlobalMixDb(string filePath)
     if (fh.rdstate() & ifstream::failbit) {
         fh.clear();
         cout << "Unable to load global mix database! (" << filePath << ")" << endl;
+        return;
     }
     
     /* get file size */

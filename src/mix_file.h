@@ -226,8 +226,10 @@ protected:
     bool extractAllFast(std::string outPath = ".");
     void readLocalMixDb(std::ifstream * fh, uint32_t offset, uint32_t size);
     void readGlobalMixDb(std::string filePath);
-    bool writeOldHeader(std::ofstream& out, int16_t c_files, int32_t size);
-    bool writeNewHeader(std::ofstream& out);
+    bool writeHeader(std::ofstream& out, int16_t c_files, int32_t size, 
+                     uint32_t flags = 0);
+    bool writeIndex(std::ofstream& out, int16_t c_files, int32_t size);
+    bool writeLmd(std::ofstream& out);
     uint32_t lmdSize();
     t_mix_header mix_head; // mix file header
     std::vector<t_mix_index_entry> files; // list of file headers

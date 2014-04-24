@@ -41,7 +41,7 @@
 using namespace std;
 
 enum { OPT_HELP, OPT_EXTRACT, OPT_CREATE, OPT_GAME, OPT_FILES, OPT_DIR,
-       OPT_LIST, OPT_MIX, OPT_ID };
+       OPT_LIST, OPT_MIX, OPT_ID, OPT_LMD};
 typedef enum { NONE, EXTRACT, CREATE, ADD, REMOVE, LIST } t_mixmode;
 
 //get program directory from argv[0]
@@ -222,6 +222,7 @@ CSimpleOpt::SOption g_rgOptions[] = {
     { OPT_EXTRACT,  _T("--extract"),      SO_NONE    },
     { OPT_CREATE,   _T("--create"),       SO_NONE    },
     { OPT_LIST,     _T("--list"),         SO_NONE    },
+    { OPT_LMD,      _T("--lmd"),          SO_NONE    },
     { OPT_FILES,    _T("--file"),         SO_REQ_SEP },
     { OPT_ID,       _T("--id"),           SO_REQ_SEP },
     { OPT_DIR,      _T("--directory"),    SO_REQ_SEP },
@@ -248,6 +249,7 @@ int _tmain(int argc, TCHAR** argv)
     string user_home_dir = GetHomeDir();
     t_game game = game_td;
     t_mixmode mode = NONE;
+    bool local_db = false;
     
     CSimpleOpt args(argc, argv, g_rgOptions);
     
@@ -305,6 +307,11 @@ int _tmain(int argc, TCHAR** argv)
                 }
                 break;
             }
+            case OPT_LMD:
+            {
+                local_db = true;
+                break;
+            }
             case OPT_CREATE:
             {
                 if (mode != NONE) { NoMultiMode(argv); return 1; }
@@ -357,6 +364,20 @@ int _tmain(int argc, TCHAR** argv)
             if (!Extraction(in_file, file, dir, file_id)) {
                 return 1;
             }
+            return 0;
+            break;
+        }
+        case CREATE:
+        {
+            MixFile out_file(findGMD(getProgramDir(program_path.c_str()), 
+                            user_home_dir));
+
+            if (!out_file.createMix(input_mixfile, dir, game, local_db, 
+                 false)){
+                cout << "Failed to create new mix file" << endl;
+                return 1;
+            }
+            
             return 0;
             break;
         }
