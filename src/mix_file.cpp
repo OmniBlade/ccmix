@@ -141,6 +141,8 @@ bool MixFile::open(const string path, t_game openGame) {
 
 bool MixFile::readIndex() {
     t_mix_index_entry fheader;
+    int lmd_index = 0;
+    bool lmd_found = false;
 
     if (!fh.is_open())
         return false;
@@ -148,15 +150,18 @@ bool MixFile::readIndex() {
     if (m_is_encrypted)
         return readEncryptedIndex();
 
-
     for (int i = 0; i < mix_head.c_files; i++) {
         fh.read((char*) &fheader, sizeof (fheader));
         dataoffset += sizeof (fheader);
         files.push_back(fheader);
-
-        if (fheader.id == 0x366e051f) { // local mix database.dat
-            readLocalMixDb(&fh, fheader.offset + dataoffset, fheader.size);
+        if (fheader.id == getID(mixGame, lmd_name)) { // 0x366e051f local mix database.dat
+            lmd_index = i;
+            lmd_found = true;
         }
+    }
+    
+    if (lmd_found){
+        readLocalMixDb(files[lmd_index].offset + dataoffset, files[lmd_index].size);
     }
 
     return true;
@@ -170,6 +175,8 @@ bool MixFile::readEncryptedIndex() {
     Cblowfish blfish;
     char * encIndex;
     t_mix_index_entry fheader;
+    int lmd_index = 0;
+    bool lmd_found = false;
 
     if (!fh.is_open()) return false;
 
@@ -196,10 +203,14 @@ bool MixFile::readEncryptedIndex() {
         memcpy((char *) &fheader, encIndex + i * 12, 12);
         files.push_back(fheader);
 
-        if (fheader.id == 0x366e051f) { // local mix database.dat
-            readLocalMixDb(&fh, fheader.offset + dataoffset, fheader.size);
+        if (fheader.id == getID(mixGame, lmd_name)) { // 0x366e051f local mix database.dat
+            lmd_index = i;
+            lmd_found = true;
         }
-
+    }
+    
+    if (lmd_found){
+        readLocalMixDb(files[lmd_index].offset + dataoffset, files[lmd_index].size);
     }
 
     delete[] encIndex;
@@ -344,7 +355,7 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     //are we wanting lmd? if so start preparing for it here
     if(with_lmd){
         filenames.push_back(lmd_name);
-        finfo.id = 0x366e051f;  //always this value??
+        finfo.id = getID(mixGame, lmd_name);  //always this value??
         finfo.offset = offset;
         finfo.size = lmdSize();
         offset += finfo.size;
@@ -427,7 +438,7 @@ bool MixFile::writeLmd(std::ofstream& out) {
         cout << "Writing string " << filenames[i] << " to LMD" << endl;
         out.write(filenames[i].c_str(), filenames[i].size() + 1);
     }
-    out.put('\0');
+    //out.put('\0');
     return true;
 }
 
@@ -536,17 +547,18 @@ void MixFile::close() {
     m_is_encrypted = false;    
 }
 
-void MixFile::readLocalMixDb(ifstream * fh, uint32_t offset, uint32_t size)
+void MixFile::readLocalMixDb(uint32_t offset, uint32_t size)
 {
     char* data = new char[size];
-    fh->seekg(offset, ios_base::beg);
-    fh->read(data, size);
+    fh.seekg(offset, ios_base::beg);
+    fh.read(data, size);
     
     //move pointer past most of header to entry count, total header is 52 bytes.
     data += 48;
     
     //get count of entries
     int32_t count = *reinterpret_cast<const int32_t*>(data);
+    cout << "Count for lmd entries is " << count << endl;
     data += 4;
 
     //retrieve each entry into the struct as a string then push to the map.

@@ -224,7 +224,7 @@ protected:
     bool readEncryptedIndex();
     bool readFileNames();
     bool extractAllFast(std::string outPath = ".");
-    void readLocalMixDb(std::ifstream * fh, uint32_t offset, uint32_t size);
+    void readLocalMixDb(uint32_t offset, uint32_t size);
     void readGlobalMixDb(std::string filePath);
     bool writeHeader(std::ofstream& out, int16_t c_files, int32_t size, 
                      uint32_t flags = 0);
