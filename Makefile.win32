@@ -1,7 +1,8 @@
-CFLAGS=-g -O2 -Wall -Wextra -Isrc -DNDEBUG $(OPTFLAGS)
+CFLAGS=-g -O2 -Wall -Wextra -Isrc -DNDEBUG -DWINDOWS $(OPTFLAGS)
+CXXFLAGS=-g -O2 -Wall -Wextra -Isrc -DNDEBUG -DWINDOWS $(OPTFLAGS)
 LIBS=$(OPTLIBS)
 PREFIX?=/usr/local
-CC=g++
+CC=i586-mingw32msvc-g++
 
 SOURCES=$(wildcard src/**/*.cpp src/*.cpp)
 OBJECTS=$(patsubst %.cpp,%.o,$(SOURCES))
@@ -9,7 +10,7 @@ OBJECTS=$(patsubst %.cpp,%.o,$(SOURCES))
 TEST_SRC=$(wildcard tests/*_tests.cpp)
 TESTS=$(patsubst %.cpp,%,$(TEST_SRC))
 
-TARGET=build/ccmix
+TARGET=build/ccmix.exe
 SO_TARGET=$(patsubst %.a,%.so,$(TARGET))
 
 # The Target Build
@@ -17,11 +18,6 @@ all: $(TARGET)
 
 dev: CFLAGS=-g -Wall -Isrc -Wall -Wexta $(OPTFLAGS)
 dev: all
-
-win32:
-	/usr/bin/make -f Makefile.win32 CC=i586-mingw32msvc-g++ \
-	CXX=i586-mingw32msvc-g++
-
 	
 $(TARGET): build $(OBJECTS)
 	$(CC) $(OBJECTS) -o $(TARGET)

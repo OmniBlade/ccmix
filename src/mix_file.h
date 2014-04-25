@@ -248,4 +248,3 @@ protected:
 };
 
 #endif	/* MIX_FILE_H */
-

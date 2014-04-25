@@ -345,7 +345,7 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     
     //iterate through entries in directory, ignoring directories
     while ((dirp = readdir(dp)) != NULL) {
-        lstat((in_dir + DIR_SEPARATOR + dirp->d_name).c_str(), &st);
+        stat((in_dir + DIR_SEPARATOR + dirp->d_name).c_str(), &st);
         if(!S_ISDIR(st.st_mode)){
             if(std::find(id_list.begin(), id_list.end(), 
                getID(mixGame, string(dirp->d_name))) != id_list.end()) {

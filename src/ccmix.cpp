@@ -24,7 +24,6 @@
 #else
 
 #include <unistd.h>
-#include <pwd.h>
 #include <dirent.h>
 #define TCHAR		char
 #define _T(x)		x
@@ -37,6 +36,7 @@
 #define DIR_SEPARATOR '\\'
 #else
 #define DIR_SEPARATOR '/'
+#include <pwd.h>
 #endif
 
 using namespace std;
