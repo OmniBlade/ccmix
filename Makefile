@@ -13,7 +13,7 @@ TARGET=build/ccmix
 SO_TARGET=$(patsubst %.a,%.so,$(TARGET))
 
 # The Target Build
-all: $(TARGET) tests
+all: $(TARGET)
 
 dev: CFLAGS=-g -Wall -Isrc -Wall -Wextra $(OPTFLAGS)
 dev: all
@@ -24,15 +24,6 @@ $(TARGET): build $(OBJECTS)
 build:
 	@mkdir -p build
 	@mkdir -p bin
-
-# The Unit Tests
-.PHONY: tests
-tests: CFLAGS += $(TARGET)
-tests: $(TESTS)
-	sh ./tests/runtests.sh
-
-valgrind:
-	VALGRIND="valgrind --log-file=/tmp/valgrind-%p.log" $(MAKE)
 
 # The Cleaner
 clean:
