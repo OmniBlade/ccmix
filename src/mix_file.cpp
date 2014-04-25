@@ -188,6 +188,8 @@ bool MixFile::readEncryptedIndex() {
     blockCnt = (indexSize - decrypt_size) / 8;
 
     if ((indexSize - decrypt_size) % 8) blockCnt++;
+    
+    cout << "decrypting " << blockCnt << " blocks after initial header" << endl;
 
     encIndex = new char[blockCnt * 8 + decrypt_size];
     memcpy(encIndex, decrypt_buffer, decrypt_size);
@@ -371,18 +373,22 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
         files.push_back(finfo);
     }
     
+    
+    if(files.size() != filenames.size()){
+        cout << "Number of file header entries does not match number of"
+                "filenames to add" << endl;
+        return false;
+    }
+    
+    cout << files.size() << " files, total size " << offset << 
+            " before writing header" << endl;
+    
     //if we are encrypted, generate random key_source
     if(m_is_encrypted){
         cout << "Generating a key source" << endl;
         for(int i = 0; i < 80; i++){
             key_source[i] = rand() % 0xff;
         }
-    }
-    
-    if(files.size() != filenames.size()){
-        cout << "Number of file header entries does not match number of"
-                "filenames to add" << endl;
-        return false;
     }
     
     //time to start writing our new file
@@ -396,7 +402,6 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     //write a header
     if(!m_is_encrypted){
         if(!writeHeader(ofile, files.size(), offset)) {
-            cout << "Encryption of header failed, file likely corrupt" << endl;
             return false;
         }    
     } else {
@@ -450,6 +455,7 @@ bool MixFile::writeEncryptedHeader(ofstream& out, int16_t c_files, int32_t size,
     uint8_t enc_buff[8];
     Cblowfish blfish;
     char* enc_head;
+    int buff_offset = 0;
     
     //write out the bits that don't need encrypting
     out.write(reinterpret_cast <const char*> (&flags), sizeof(uint32_t));
@@ -457,22 +463,27 @@ bool MixFile::writeEncryptedHeader(ofstream& out, int16_t c_files, int32_t size,
     out.write(key_source, 80);
     
     //work out our header sizes
-    head_size = (files.size() * 12) + sizeof(t_mix_header);
+    head_size = (c_files * sizeof(t_mix_index_entry)) + sizeof(t_mix_header);
     block_count = head_size / 8;
     rem = head_size % 8;
     if(rem) block_count++;
+    
+    cout << "encrypting " << block_count << " blocks" << endl;
     
     //setup char array to hold the encrypted index before it is written
     enc_head = new char[block_count * 8]();
     
     //copy header info into header buffer
     memcpy(enc_head, reinterpret_cast <const char*> (&c_files), sizeof(c_files));
-    memcpy(enc_head + sizeof(c_files), reinterpret_cast <const char*> (&size), 
+    buff_offset += sizeof(c_files);
+    memcpy(enc_head + buff_offset, reinterpret_cast <const char*> (&size), 
            sizeof(size));
+    buff_offset += sizeof(size);
     //copy index to buffer
-    for(int i = 0; i < files.size(); i++) {
-        memcpy(enc_head + sizeof(t_mix_header) + sizeof(t_mix_index_entry) * i,
-               reinterpret_cast <const char*> (&files[i]), sizeof(t_mix_index_entry));
+    for(int i = 0; i < c_files; i++) {
+        memcpy(enc_head + buff_offset, reinterpret_cast <const char*> (&files[i]), 
+               sizeof(t_mix_index_entry));
+        buff_offset += sizeof(t_mix_index_entry);
     }
     
     //get ready for encryption
@@ -480,12 +491,6 @@ bool MixFile::writeEncryptedHeader(ofstream& out, int16_t c_files, int32_t size,
     cout << "Key = "; 
     for(int i = 0; i < 14; i++){
         cout << *((unsigned int*) (key + i));
-    }
-    cout << endl;
-    
-    cout << "Keysource = "; 
-    for(int i = 0; i < 20; i++){
-        cout << *((unsigned int*) (key_source + i));
     }
     cout << endl;
     
@@ -510,12 +515,10 @@ bool MixFile::writeLmd(std::ofstream& out) {
                               filenames.size()};
     //xcc id
     out.write(xcc_id, sizeof(xcc_id));
-    cout << "Wrote XCC ID" << endl;
     //rest of header
     out.write(reinterpret_cast<const char*> (padded_size), sizeof(padded_size));
-    cout << "Wrote LMD size" << endl;
+    //filenames
     for(int i = 0; i < filenames.size(); i++){
-        cout << "Writing string " << filenames[i] << " to LMD" << endl;
         out.write(filenames[i].c_str(), filenames[i].size() + 1);
     }
     //out.put('\0');
@@ -571,7 +574,8 @@ bool MixFile::readFileNames() {
 
 string MixFile::printFileList(int flags = 1) {
     stringstream os;
-
+    cout << mix_head.c_files << " files, total size " << mix_head.size << 
+            " according to header" << endl;
     if (flags & 1) {
         if (filenames.empty())
             readFileNames();
