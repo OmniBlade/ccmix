@@ -10,6 +10,7 @@
 //#include "SimpleGlob.h"
 #include <cstdlib>
 #include <cstdio>
+#include <ctime>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -41,8 +42,10 @@
 using namespace std;
 
 enum { OPT_HELP, OPT_EXTRACT, OPT_CREATE, OPT_GAME, OPT_FILES, OPT_DIR,
-       OPT_LIST, OPT_MIX, OPT_ID, OPT_LMD};
+       OPT_LIST, OPT_MIX, OPT_ID, OPT_LMD, OPT_ENC};
 typedef enum { NONE, EXTRACT, CREATE, ADD, REMOVE, LIST } t_mixmode;
+
+const string games[] = {"td", "ra", "ts"};
 
 //get program directory from argv[0]
 static const string getProgramDir(const char* const program_location) {
@@ -101,7 +104,7 @@ void ShowHelp(TCHAR** argv)
     cout << "/n***ccmix program usage***\n" << endl;
     cout << "Usage: " << argv[0] << 
             " [--mode] (--file FILE) (--directory DIR) (--game "
-            "[game_td|game_ra|game_ts]) [--mix MIXFILE]\n" << endl;
+            "[td|ra|ts]) [--mix MIXFILE]\n" << endl;
     cout << "Modes:\n" << endl;
     cout << "--extract\n"
             "Extracts the contents of the specified mix file to the current "
@@ -123,9 +126,9 @@ void ShowHelp(TCHAR** argv)
             "Revenge.\n" << endl;
     cout << "--list\n"
             "Lists the contents of the specified mix file.\n" 
-            "--game specified the game the mix is from, game_td covers the\n"
-            "orignal C&C and Sole Survivor. game_ra covers Redalert and its\n"
-            "expansions. game_ts covers Tiberian Sun and Red Alert 2/Yuri's "
+            "--game specified the game the mix is from, td covers the\n"
+            "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
+            "expansions. ts covers Tiberian Sun and Red Alert 2/Yuri's "
             "Revenge.\n" << endl;
 }
 
@@ -154,18 +157,26 @@ uint32_t StringToID(string in_string)
 
 //Function handles the different ways to extract files from a mix.
 bool Extraction(MixFile& in_file, string filename, string outdir, uint32_t id)
-{
+{   
     if (outdir == "") outdir = "./";
+    string destination = outdir + DIR_SEPARATOR + filename;
     
-    if (filename != "") {
-        if (!in_file.extractFile(filename, outdir)) {
+    if (filename == "" && id == 0) {
+        cout << "No file or ID to extract given" << endl;
+        return false;
+    } else if (filename != "" && id == 0) {
+        if (!in_file.extractFile(filename, destination)) {
             cout << "Extraction failed" << endl;
             return false;
         } else {
             return true;
         }
     } else if (id != 0){
-        if (!in_file.extractFile(id, outdir)) {
+        if (filename == ""){
+            cout << "You must specify a filename to extract to when giving "
+                    "an ID" << endl;
+        }
+        if (!in_file.extractFile(id, destination)) {
             cout << "Extraction failed" << endl;
             return false;
         } else {
@@ -223,6 +234,7 @@ CSimpleOpt::SOption g_rgOptions[] = {
     { OPT_CREATE,   _T("--create"),       SO_NONE    },
     { OPT_LIST,     _T("--list"),         SO_NONE    },
     { OPT_LMD,      _T("--lmd"),          SO_NONE    },
+    { OPT_ENC,      _T("--encrypt"),      SO_NONE    },
     { OPT_FILES,    _T("--file"),         SO_REQ_SEP },
     { OPT_ID,       _T("--id"),           SO_REQ_SEP },
     { OPT_DIR,      _T("--directory"),    SO_REQ_SEP },
@@ -235,7 +247,7 @@ CSimpleOpt::SOption g_rgOptions[] = {
     
 int _tmain(int argc, TCHAR** argv)
 {
-    if(argc <= 2) {
+    if(argc <= 1) {
         ShowUsage(argv);
         return 0;
     }
@@ -250,6 +262,10 @@ int _tmain(int argc, TCHAR** argv)
     t_game game = game_td;
     t_mixmode mode = NONE;
     bool local_db = false;
+    bool encrypt = false;
+    
+    //seed random number generator
+    srand(time(NULL));
     
     CSimpleOpt args(argc, argv, g_rgOptions);
     
@@ -310,6 +326,26 @@ int _tmain(int argc, TCHAR** argv)
             case OPT_LMD:
             {
                 local_db = true;
+                break;
+            }
+            case OPT_ENC:
+            {
+                encrypt = true;
+                break;
+            }
+            case OPT_GAME:
+            {
+                string gt = string(args.OptionArg());
+                if(gt == games[0]){
+                    game = game_td;
+                } else if(gt == games[1]){
+                    game = game_ra;
+                } else if(gt == games[2]){
+                    game = game_ts;
+                } else {
+                    _tprintf(_T("--game is either td, ra or ts.\n"));
+                }
+                    
                 break;
             }
             case OPT_CREATE:
@@ -373,7 +409,7 @@ int _tmain(int argc, TCHAR** argv)
                             user_home_dir));
 
             if (!out_file.createMix(input_mixfile, dir, game, local_db, 
-                 false)){
+                 encrypt)){
                 cout << "Failed to create new mix file" << endl;
                 return 1;
             }

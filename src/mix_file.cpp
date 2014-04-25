@@ -50,9 +50,6 @@ MixFile::~MixFile() {
 }
 
 uint32_t MixFile::getID(t_game game, string name) {
-    /*if(name == lmd_name){
-        return 0x366e051f;
-    }*/
     transform(name.begin(), name.end(), name.begin(),
             (int(*)(int)) toupper); // convert to uppercase
     if (game != game_ts) { // for TD and RA
@@ -105,15 +102,20 @@ bool MixFile::open(const string path, t_game openGame) {
         m_has_checksum = mix_head.flags & mix_checksum;
         m_is_encrypted = mix_head.flags & mix_encrypted;
         if (m_is_encrypted) {
-
+            
             /* read key_source */
             fh.seekg(4);
             fh.read(key_source, 80);
             get_blowfish_key((uint8_t *) key_source, (uint8_t *) key);
+            cout << "Key = "; 
+            for(int i = 0; i < 14; i++){
+                cout << *((unsigned int*) (key + i));
+            }
+            cout << endl;
             Cblowfish blfish;
             uint8_t enc_header[8];
             blfish.set_key((uint8_t *) key, 56);
-
+            
             /* read encrypted header */
             fh.seekg(84);
             fh.read((char*) enc_header, 8);
@@ -305,6 +307,10 @@ bool MixFile::extractFile(string fileName, string outPath) {
 
 bool MixFile::createMix(string fileName, string in_dir, t_game game, 
                         bool with_lmd, bool encrypted) {
+    if(game == game_td && encrypted){
+        cout << "Cannot encrypt TD mix files" << endl;
+        return false;
+    }
     DIR* dp;
     struct dirent *dirp;
     struct stat st;
@@ -322,6 +328,13 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     //set which game we are writing for
     mixGame = game;
     
+    //set that we are going to encrypt
+    m_is_encrypted = encrypted;
+    
+    cout << "Game we are building for is " << mixGame << endl;
+    if(m_is_encrypted){
+        cout << "We are going to try to encrypt" << endl;
+    }
     //make sure we can open the directory
     if((dp = opendir(in_dir.c_str())) == NULL) {
         cout << "Error opening " << in_dir << endl;
@@ -330,10 +343,8 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     
     //iterate through entries in directory, ignoring directories
     while ((dirp = readdir(dp)) != NULL) {
-        cout << dirp->d_name << " is current file" << endl;
         lstat((in_dir + DIR_SEPARATOR + dirp->d_name).c_str(), &st);
         if(!S_ISDIR(st.st_mode)){
-            cout << dirp->d_name << " is not a directory" << endl;
             if(std::find(id_list.begin(), id_list.end(), 
                getID(mixGame, string(dirp->d_name))) != id_list.end()) {
                 cout << "Skipping " << dirp->d_name << ", ID Collision" << endl;
@@ -350,16 +361,22 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     }
     closedir(dp);
     
-    cout << "Finished getting file info and closed dirent" << endl;
-    
     //are we wanting lmd? if so start preparing for it here
     if(with_lmd){
         filenames.push_back(lmd_name);
-        finfo.id = getID(mixGame, lmd_name);  //always this value??
+        finfo.id = getID(mixGame, lmd_name);
         finfo.offset = offset;
         finfo.size = lmdSize();
         offset += finfo.size;
         files.push_back(finfo);
+    }
+    
+    //if we are encrypted, generate random key_source
+    if(m_is_encrypted){
+        cout << "Generating a key source" << endl;
+        for(int i = 0; i < 80; i++){
+            key_source[i] = rand() % 0xff;
+        }
     }
     
     if(files.size() != filenames.size()){
@@ -377,13 +394,16 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     }
     
     //write a header
-    
-    if(!writeHeader(ofile, files.size(), offset))
-        return false;
-    
-    if(!writeIndex(ofile, files.size(), offset))
-        return false;
-    
+    if(!m_is_encrypted){
+        if(!writeHeader(ofile, files.size(), offset)) {
+            cout << "Encryption of header failed, file likely corrupt" << endl;
+            return false;
+        }    
+    } else {
+        if(!writeEncryptedHeader(ofile, files.size(), offset, mix_encrypted))
+            return false;
+    }
+        
     cout << "Writing the body now" << endl;
     //write the body
     for(int i = 0; i < filenames.size(); i++){
@@ -414,13 +434,73 @@ bool MixFile::writeHeader(ofstream& out, int16_t c_files, int32_t size,
     out.write(reinterpret_cast <const char*> (&c_files), sizeof(c_files));
     out.write(reinterpret_cast <const char*> (&size), sizeof(size));
     
-    return true;
-}
-
-bool MixFile::writeIndex(std::ofstream& out, int16_t c_files, int32_t size){
+    //write the index
     for(int i = 0; i < files.size(); i++) {
         out.write(reinterpret_cast <const char*> (&files[i]), sizeof(t_mix_index_entry));
     }
+    
+    return true;
+}
+
+bool MixFile::writeEncryptedHeader(ofstream& out, int16_t c_files, int32_t size, 
+                          uint32_t flags) {
+    int head_size;
+    int block_count;
+    int rem = 0;
+    uint8_t enc_buff[8];
+    Cblowfish blfish;
+    char* enc_head;
+    
+    //write out the bits that don't need encrypting
+    out.write(reinterpret_cast <const char*> (&flags), sizeof(uint32_t));
+    //write keysource
+    out.write(key_source, 80);
+    
+    //work out our header sizes
+    head_size = (files.size() * 12) + sizeof(t_mix_header);
+    block_count = head_size / 8;
+    rem = head_size % 8;
+    if(rem) block_count++;
+    
+    //setup char array to hold the encrypted index before it is written
+    enc_head = new char[block_count * 8]();
+    
+    //copy header info into header buffer
+    memcpy(enc_head, reinterpret_cast <const char*> (&c_files), sizeof(c_files));
+    memcpy(enc_head + sizeof(c_files), reinterpret_cast <const char*> (&size), 
+           sizeof(size));
+    //copy index to buffer
+    for(int i = 0; i < files.size(); i++) {
+        memcpy(enc_head + sizeof(t_mix_header) + sizeof(t_mix_index_entry) * i,
+               reinterpret_cast <const char*> (&files[i]), sizeof(t_mix_index_entry));
+    }
+    
+    //get ready for encryption
+    get_blowfish_key((uint8_t *) key_source, (uint8_t *) key);
+    cout << "Key = "; 
+    for(int i = 0; i < 14; i++){
+        cout << *((unsigned int*) (key + i));
+    }
+    cout << endl;
+    
+    cout << "Keysource = "; 
+    for(int i = 0; i < 20; i++){
+        cout << *((unsigned int*) (key_source + i));
+    }
+    cout << endl;
+    
+    blfish.set_key((uint8_t *) key, 56);
+    
+    //encrypt blocks and write them
+    for(int i = 0; i < block_count; i++){
+        memcpy(enc_buff, enc_head + i * 8, 8);
+        blfish.encipher((void *) &enc_buff, (void *) &enc_buff, 8);
+        out.write(reinterpret_cast <const char*> (enc_buff), 8);
+    }
+    
+    //cleanup
+    delete[] enc_head;
+    
     return true;
 }
 

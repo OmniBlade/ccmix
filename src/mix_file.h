@@ -94,9 +94,9 @@ struct t_mix_index_entry
 
 typedef enum 
 { 
-    game_ts,
+    game_td,
     game_ra,
-    game_td
+    game_ts
 } t_game;
 
 const int32_t mix_checksum = 0x00010000;
@@ -228,7 +228,8 @@ protected:
     void readGlobalMixDb(std::string filePath);
     bool writeHeader(std::ofstream& out, int16_t c_files, int32_t size, 
                      uint32_t flags = 0);
-    bool writeIndex(std::ofstream& out, int16_t c_files, int32_t size);
+    bool writeEncryptedHeader(std::ofstream& out, int16_t c_files, int32_t size, 
+                     uint32_t flags = 0);
     bool writeLmd(std::ofstream& out);
     uint32_t lmdSize();
     t_mix_header mix_head; // mix file header
