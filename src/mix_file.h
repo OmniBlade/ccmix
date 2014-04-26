@@ -87,7 +87,7 @@ union t_mix_header
  */
 struct t_mix_index_entry
 {
-    uint32_t id;                // id, used to identify the file instead of a normal name
+    int32_t id;                // id, used to identify the file instead of a normal name
     uint32_t offset;                     // offset from start of body
     uint32_t size;                       // size of this internal file
 };
@@ -232,6 +232,7 @@ protected:
                      uint32_t flags = 0);
     bool writeLmd(std::ofstream& out);
     uint32_t lmdSize();
+    static bool compareId(const t_mix_index_entry &a, const t_mix_index_entry &b);
     t_mix_header mix_head; // mix file header
     std::vector<t_mix_index_entry> files; // list of file headers
     std::vector<std::string> filenames; // file names

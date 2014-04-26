@@ -96,7 +96,9 @@ bool MixFile::open(const string path, t_game openGame) {
 
     fh.read((char*) &mix_head, sizeof (mix_head));
     dataoffset = 6;
-
+    
+    cout << "Header reported size on read is " << mix_head.size << endl;
+    
     if (!mix_head.c_files) {
         dataoffset += 4;
         m_has_checksum = mix_head.flags & mix_checksum;
@@ -130,6 +132,7 @@ bool MixFile::open(const string path, t_game openGame) {
         } else {
             fh.seekg(4);
             fh.read((char*) &mix_head, 6);
+            cout << "Header reported size on read is " << mix_head.size << endl;
             readIndex();
         }
 
@@ -306,6 +309,10 @@ bool MixFile::extractFile(uint32_t fileID, string outPath) {
 bool MixFile::extractFile(string fileName, string outPath) {
     return extractFile(getID(mixGame, fileName), outPath);
 }
+bool MixFile::compareId(const t_mix_index_entry &a, 
+                               const t_mix_index_entry &b){
+    return a.id < b.id;
+}
 
 bool MixFile::createMix(string fileName, string in_dir, t_game game, 
                         bool with_lmd, bool encrypted) {
@@ -352,11 +359,13 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
                 cout << "Skipping " << dirp->d_name << ", ID Collision" << endl;
                 continue;
             } 
+            cout << string(dirp->d_name) << " added" << endl;
             filenames.push_back(string(dirp->d_name));
             finfo.id = getID(mixGame, string(dirp->d_name));
             finfo.offset = offset;
             stat((in_dir + DIR_SEPARATOR + dirp->d_name).c_str(), &st);
             finfo.size = st.st_size;
+            cout << "File should be size " << finfo.size << endl;
             offset += finfo.size;
             files.push_back(finfo);
         }
@@ -372,7 +381,6 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
         offset += finfo.size;
         files.push_back(finfo);
     }
-    
     
     if(files.size() != filenames.size()){
         cout << "Number of file header entries does not match number of"
@@ -390,6 +398,9 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
             key_source[i] = rand() % 0xff;
         }
     }
+    
+    //games use binary search on the header so we need an ID sorted index
+    std::sort(files.begin(), files.end(), MixFile::compareId);
     
     //time to start writing our new file
     ofile.open(fileName.c_str(), ofstream::binary|ofstream::trunc);
@@ -411,7 +422,7 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
         
     cout << "Writing the body now" << endl;
     //write the body
-    for(int i = 0; i < filenames.size(); i++){
+    for(unsigned int i = 0; i < filenames.size(); i++){
         //last entry is lmd if with_lmd so break for special handling
         if(with_lmd && i == filenames.size() - 1) break;
 
@@ -518,7 +529,7 @@ bool MixFile::writeLmd(std::ofstream& out) {
     //rest of header
     out.write(reinterpret_cast<const char*> (padded_size), sizeof(padded_size));
     //filenames
-    for(int i = 0; i < filenames.size(); i++){
+    for(unsigned int i = 0; i < filenames.size(); i++){
         out.write(filenames[i].c_str(), filenames[i].size() + 1);
     }
     //out.put('\0');
@@ -527,8 +538,11 @@ bool MixFile::writeLmd(std::ofstream& out) {
 
 //calculate the size of an lmd from filenames
 uint32_t MixFile::lmdSize() {
+    uint32_t padded_size[] = {files[files.size() - 1].size, 0, 0, 0, 
+                              filenames.size()};
     //lmd header is 52 bytes big
-    uint32_t rv = 52;
+    uint32_t rv = sizeof(xcc_id);
+    rv += sizeof(padded_size);
     for (int i = 0; i < filenames.size(); i++){
         rv += filenames[i].size();
     }
