@@ -88,6 +88,18 @@ string findGMD(const string program_dir, const string home_dir)
     return gmd_loc;
 }
 
+string findKeySource(const string program_dir)
+{
+    string key_source_loc = "key.source";
+    string gmd_test = program_dir + DIR_SEPARATOR + key_source_loc;
+    if (FILE *file = fopen(gmd_test.c_str(), "r")) {
+        fclose(file);
+        return gmd_test;
+    }
+
+    return key_source_loc;
+}
+
 // This just shows a quick usage guide in case an incorrect parameter was used
 // or not all required args were provided.
 inline void ShowUsage(TCHAR** argv)
@@ -409,7 +421,7 @@ int _tmain(int argc, TCHAR** argv)
                             user_home_dir));
 
             if (!out_file.createMix(input_mixfile, dir, game, local_db, 
-                 encrypt)){
+                 encrypt, findKeySource(getProgramDir(program_path.c_str())))){
                 cout << "Failed to create new mix file" << endl;
                 return 1;
             }

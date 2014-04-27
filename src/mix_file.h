@@ -182,7 +182,7 @@ public:
      */
     bool createMix(std::string fileName, std::string in_dir, 
                    t_game game = game_td, bool with_lmd = false, 
-                   bool encrypted = false);
+                   bool encrypted = false, std::string key_src = "");
     /**
      * @brief checks, if file is present in the archive
      * @param fname file name

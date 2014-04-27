@@ -315,7 +315,7 @@ bool MixFile::compareId(const t_mix_index_entry &a,
 }
 
 bool MixFile::createMix(string fileName, string in_dir, t_game game, 
-                        bool with_lmd, bool encrypted) {
+                        bool with_lmd, bool encrypted, string key_src) {
     if(game == game_td && encrypted){
         cout << "Cannot encrypt TD mix files" << endl;
         return false;
@@ -393,10 +393,20 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     
     //if we are encrypted, generate random key_source
     if(m_is_encrypted){
-        cout << "Generating a key source" << endl;
+        ifile.open(key_src.c_str(), ios::binary);
+        if(ifile.is_open()){
+            ifile.read(key_source, 80);
+        } else {
+            cout << "Could not open a key_source, encryption disabled" << endl;
+            m_is_encrypted = false;
+        }
+        ifile.close();
+        
+        //rendom gen doesn't work with the game
+        /*cout << "Generating a key source" << endl;
         for(int i = 0; i < 80; i++){
             key_source[i] = rand() % 0xff;
-        }
+        }*/
     }
     
     //games use binary search on the header so we need an ID sorted index
@@ -607,7 +617,8 @@ string MixFile::printFileList(int flags = 1) {
         os << " " << setw(8) << setfill('0') << hex << files[i].id << " | " << setw(10) << setfill(' ') << dec << (files[i].offset + dataoffset) << " | " << setw(10) << setfill(' ') << files[i].size << endl;
     }
 
-    return os.str();
+    //return os.str();
+    return "testing";
 }
 
 bool MixFile::decrypt(string outPath) {
