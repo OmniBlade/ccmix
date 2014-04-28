@@ -178,11 +178,20 @@ public:
      * @param in_dir location we should create the new mix at
      * @param with_lmd should we generate a local mix database for this mix
      * @param encrypted should we encrypt the header of this mix
+     * @param checksum should we generate a checksum for this mix
+     * @param key_src string of the path to a key_source to use in encryption
      * @return true if creation is successful
      */
     bool createMix(std::string fileName, std::string in_dir, 
                    t_game game = game_td, bool with_lmd = false, 
-                   bool encrypted = false, std::string key_src = "");
+                   bool encrypted = false, bool checksum = false, 
+                   std::string key_src = "");
+    /**
+     * @brief adds a sha1 checksum to the end of the file and flags it in the
+     *        header.
+     * @return true if successful
+     */
+    bool addCheckSum();
     /**
      * @brief checks, if file is present in the archive
      * @param fname file name
@@ -226,11 +235,10 @@ protected:
     bool extractAllFast(std::string outPath = ".");
     void readLocalMixDb(uint32_t offset, uint32_t size);
     void readGlobalMixDb(std::string filePath);
-    bool writeHeader(std::ofstream& out, int16_t c_files, int32_t size, 
-                     uint32_t flags = 0);
-    bool writeEncryptedHeader(std::ofstream& out, int16_t c_files, int32_t size, 
-                     uint32_t flags = 0);
-    bool writeLmd(std::ofstream& out);
+    bool writeHeader(int16_t c_files, int32_t size, uint32_t flags = 0);
+    bool writeEncryptedHeader(int16_t c_files, int32_t size, uint32_t flags = 0);
+    bool writeLmd();
+    bool writeCheckSum();
     uint32_t lmdSize();
     static bool compareId(const t_mix_index_entry &a, const t_mix_index_entry &b);
     t_mix_header mix_head; // mix file header
@@ -239,7 +247,7 @@ protected:
     bool m_is_encrypted;
     bool m_has_checksum;
     int32_t dataoffset;
-    std::ifstream fh; // file handler
+    std::fstream fh; // file handler
     char key_source[80];
     char key[56];
     char decrypt_buffer[8]; // begining of next index read at the end of last block

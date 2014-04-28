@@ -5,6 +5,7 @@
  * Created on 29. prosinec 2011, 11:32
  */
 
+#include "sha1.h"
 #include "mix_file.h"
 #include <iostream>
 #include "Ccrc.h"
@@ -89,15 +90,14 @@ bool MixFile::open(const string path, t_game openGame) {
 
     mixGame = openGame;
     
-    fh.open(path.c_str(), ios::binary);
-    if (fh.rdstate() & ifstream::failbit) {
+    fh.open(path.c_str(), fstream::in | fstream::out | fstream::binary);
+    if (!fh.is_open()) {
+        cout << "File " << path << " failed to open" << endl;
         return false;
     }
 
     fh.read((char*) &mix_head, sizeof (mix_head));
     dataoffset = 6;
-    
-    cout << "Header reported size on read is " << mix_head.size << endl;
     
     if (!mix_head.c_files) {
         dataoffset += 4;
@@ -127,7 +127,8 @@ bool MixFile::open(const string path, t_game openGame) {
             /* encrypted block has 8b, but header only 6b => 2b is part of first index entry */
             memcpy(decrypt_buffer, (char*) (&enc_header) + 6, 2);
             decrypt_size = 2;
-
+            
+            cout << "Header reported size on read is " << mix_head.size << endl;
             readEncryptedIndex();
         } else {
             fh.seekg(4);
@@ -137,6 +138,7 @@ bool MixFile::open(const string path, t_game openGame) {
         }
 
     } else {
+        cout << "Header reported size on read is " << mix_head.size << endl;
         fh.seekg(6);
         readIndex();
     }
@@ -315,19 +317,17 @@ bool MixFile::compareId(const t_mix_index_entry &a,
 }
 
 bool MixFile::createMix(string fileName, string in_dir, t_game game, 
-                        bool with_lmd, bool encrypted, string key_src) {
-    if(game == game_td && encrypted){
-        cout << "Cannot encrypt TD mix files" << endl;
-        return false;
-    }
+                        bool with_lmd, bool encrypted, bool checksum, 
+                        string key_src) {
+    
     DIR* dp;
     struct dirent *dirp;
     struct stat st;
     t_mix_index_entry finfo;
     uint32_t offset = 0;
-    ofstream ofile;
     ifstream ifile;
     vector<uint32_t> id_list;
+    uint32_t flags = 0;
     //char* buff;
     
     //ensure vectors are clear
@@ -337,8 +337,29 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     //set which game we are writing for
     mixGame = game;
     
-    //set that we are going to encrypt
-    m_is_encrypted = encrypted;
+    if(mixGame == game_td) {
+        if(encrypted){
+            cout << "Encryption not supported with TD mix files, "
+                    "encryption disabled." << endl;
+            m_is_encrypted = false;
+        }
+        
+        if(checksum) {
+            cout << "Checksums not supported with TD mix files, "
+                    "checksum disabled." << endl;
+            m_has_checksum = false;
+        }
+    } else {
+        if(encrypted){
+                m_is_encrypted = true;
+                flags |= mix_encrypted;
+            }
+
+            if(checksum) {
+                m_has_checksum = true;
+                flags |= mix_checksum;
+            }
+    }
     
     cout << "Game we are building for is " << mixGame << endl;
     if(m_is_encrypted){
@@ -359,13 +380,13 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
                 cout << "Skipping " << dirp->d_name << ", ID Collision" << endl;
                 continue;
             } 
-            cout << string(dirp->d_name) << " added" << endl;
+            //cout << string(dirp->d_name) << " added" << endl;
             filenames.push_back(string(dirp->d_name));
             finfo.id = getID(mixGame, string(dirp->d_name));
             finfo.offset = offset;
             stat((in_dir + DIR_SEPARATOR + dirp->d_name).c_str(), &st);
             finfo.size = st.st_size;
-            cout << "File should be size " << finfo.size << endl;
+            //cout << "File should be size " << finfo.size << endl;
             offset += finfo.size;
             files.push_back(finfo);
         }
@@ -399,6 +420,7 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
         } else {
             cout << "Could not open a key_source, encryption disabled" << endl;
             m_is_encrypted = false;
+            flags &= ~mix_encrypted;
         }
         ifile.close();
         
@@ -413,20 +435,21 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     std::sort(files.begin(), files.end(), MixFile::compareId);
     
     //time to start writing our new file
-    ofile.open(fileName.c_str(), ofstream::binary|ofstream::trunc);
+    fh.open(fileName.c_str(), fstream::in | fstream::out | fstream::binary | 
+            fstream::trunc);
     
-    if(!ofile.is_open()){
+    if(!fh.is_open()){
         cout << "Failed to create empty file" << endl;
         return false;
     }
     
     //write a header
     if(!m_is_encrypted){
-        if(!writeHeader(ofile, files.size(), offset)) {
+        if(!writeHeader(files.size(), offset, flags)) {
             return false;
         }    
     } else {
-        if(!writeEncryptedHeader(ofile, files.size(), offset, mix_encrypted))
+        if(!writeEncryptedHeader(files.size(), offset, flags))
             return false;
     }
         
@@ -438,38 +461,43 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
 
         ifile.open((in_dir + DIR_SEPARATOR + filenames[i]).c_str(), 
                     ifstream::binary);
-        ofile << ifile.rdbuf();
+        fh << ifile.rdbuf();
         ifile.close();
     }
     
     //handle lmd writing here.
     if(with_lmd){
-        writeLmd(ofile);
+        writeLmd();
     }
     
-    ofile.close();
+    if(m_has_checksum){
+        addCheckSum();
+    }
+    
+    fh.close();
     
     return true;
 }
 
-bool MixFile::writeHeader(ofstream& out, int16_t c_files, int32_t size, 
-                          uint32_t flags) {
+bool MixFile::writeHeader(int16_t c_files, int32_t size, uint32_t flags) {
     if(mixGame != game_td) {
-        out.write(reinterpret_cast <const char*> (&flags), sizeof(uint32_t));
+        fh.write(reinterpret_cast <const char*> (&flags), sizeof(uint32_t));
     }
-    out.write(reinterpret_cast <const char*> (&c_files), sizeof(c_files));
-    out.write(reinterpret_cast <const char*> (&size), sizeof(size));
+    fh.write(reinterpret_cast <const char*> (&c_files), sizeof(c_files));
+    fh.write(reinterpret_cast <const char*> (&size), sizeof(size));
     
     //write the index
     for(int i = 0; i < files.size(); i++) {
-        out.write(reinterpret_cast <const char*> (&files[i]), sizeof(t_mix_index_entry));
+        fh.write(reinterpret_cast <const char*> (&files[i]), 
+                 sizeof(t_mix_index_entry));
     }
+    
+    dataoffset = fh.tellp();
     
     return true;
 }
 
-bool MixFile::writeEncryptedHeader(ofstream& out, int16_t c_files, int32_t size, 
-                          uint32_t flags) {
+bool MixFile::writeEncryptedHeader(int16_t c_files, int32_t size, uint32_t flags) {
     int head_size;
     int block_count;
     int rem = 0;
@@ -479,9 +507,9 @@ bool MixFile::writeEncryptedHeader(ofstream& out, int16_t c_files, int32_t size,
     int buff_offset = 0;
     
     //write out the bits that don't need encrypting
-    out.write(reinterpret_cast <const char*> (&flags), sizeof(uint32_t));
+    fh.write(reinterpret_cast <const char*> (&flags), sizeof(uint32_t));
     //write keysource
-    out.write(key_source, 80);
+    fh.write(key_source, 80);
     
     //work out our header sizes
     head_size = (c_files * sizeof(t_mix_index_entry)) + sizeof(t_mix_header);
@@ -521,8 +549,10 @@ bool MixFile::writeEncryptedHeader(ofstream& out, int16_t c_files, int32_t size,
     for(int i = 0; i < block_count; i++){
         memcpy(enc_buff, enc_head + i * 8, 8);
         blfish.encipher((void *) &enc_buff, (void *) &enc_buff, 8);
-        out.write(reinterpret_cast <const char*> (enc_buff), 8);
+        fh.write(reinterpret_cast <const char*> (enc_buff), 8);
     }
+    
+    dataoffset = fh.tellp();
     
     //cleanup
     delete[] enc_head;
@@ -531,18 +561,18 @@ bool MixFile::writeEncryptedHeader(ofstream& out, int16_t c_files, int32_t size,
 }
 
 //write an lmd file
-bool MixFile::writeLmd(std::ofstream& out) {
+bool MixFile::writeLmd() {
+    // this is the rest of the header that follows xcc_id
     uint32_t padded_size[] = {files[files.size() - 1].size, 0, 0, 0, 
                               filenames.size()};
     //xcc id
-    out.write(xcc_id, sizeof(xcc_id));
+    fh.write(xcc_id, sizeof(xcc_id));
     //rest of header
-    out.write(reinterpret_cast<const char*> (padded_size), sizeof(padded_size));
+    fh.write(reinterpret_cast<const char*> (padded_size), sizeof(padded_size));
     //filenames
     for(unsigned int i = 0; i < filenames.size(); i++){
-        out.write(filenames[i].c_str(), filenames[i].size() + 1);
+        fh.write(filenames[i].c_str(), filenames[i].size() + 1);
     }
-    //out.put('\0');
     return true;
 }
 
@@ -565,6 +595,66 @@ vector<string> MixFile::getFileNames() {
         readFileNames();
 
     return filenames;
+}
+
+bool MixFile::addCheckSum(){
+    //check if we think this file is checksummed already
+    if(m_has_checksum){
+        cout << "File is already flagged as having a checksum" << endl;
+        return true;
+    }
+    
+    //get the flags as they exist already in the file
+    uint32_t flags;
+    
+    fh.seekg(0, ios::beg);
+    fh.read(reinterpret_cast<char*>(&flags), sizeof(flags));
+    
+    //toggle flag for checksum and then write it
+    flags |= mix_checksum;
+    fh.seekp(0, ios::beg);
+    fh.write(reinterpret_cast<char*>(&flags), sizeof(flags));
+    
+    //write the actual checksum
+    writeCheckSum();
+    
+    return true;
+}
+
+bool MixFile::writeCheckSum() {
+    SHA1 sha1;
+    const size_t BufferSize = 144*7*1024; 
+    char* buffer = new char[BufferSize];
+    int blocks = mix_head.size / BufferSize;
+    int rem = mix_head.size % BufferSize;
+    uint8_t* hash;
+    ofstream testout;
+    
+    //read data into sha1 algo from dataoffset
+    fh.seekg(dataoffset);
+    
+    while(!fh.eof()) {
+        fh.read(buffer, BufferSize);
+        std::size_t numBytesRead = size_t(fh.gcount());
+        sha1.addBytes(buffer, numBytesRead);
+    }
+    
+    //clear stream and reset get position
+    fh.clear();
+    //fh.seekg(0, ios::beg);
+    
+    // get our hash and print it to console as well
+    hash = sha1.getDigest();
+    cout << "Checksum is ";
+    sha1.hexPrinter(hash, 20);
+    cout << endl;
+    
+    //write checksum
+    fh.seekp(0, ios::end);
+    fh.write(reinterpret_cast<const char*>(hash), 20);
+    
+    delete[] buffer;
+    free(hash);
 }
 
 bool MixFile::readFileNames() {

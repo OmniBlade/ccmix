@@ -42,8 +42,9 @@
 using namespace std;
 
 enum { OPT_HELP, OPT_EXTRACT, OPT_CREATE, OPT_GAME, OPT_FILES, OPT_DIR,
-       OPT_LIST, OPT_MIX, OPT_ID, OPT_LMD, OPT_ENC};
-typedef enum { NONE, EXTRACT, CREATE, ADD, REMOVE, LIST } t_mixmode;
+       OPT_LIST, OPT_MIX, OPT_ID, OPT_LMD, OPT_ENC, OPT_CHK, OPT_INFO, OPT_ADD, 
+       OPT_REM};
+typedef enum { NONE, EXTRACT, CREATE, ADD, REMOVE, LIST, INFO} t_mixmode;
 
 const string games[] = {"td", "ra", "ts"};
 
@@ -244,9 +245,12 @@ string GetHomeDir()
 CSimpleOpt::SOption g_rgOptions[] = {
     { OPT_EXTRACT,  _T("--extract"),      SO_NONE    },
     { OPT_CREATE,   _T("--create"),       SO_NONE    },
+    { OPT_ADD,      _T("--add"),          SO_NONE    },
+    { OPT_REM,      _T("--remove"),       SO_NONE    },
     { OPT_LIST,     _T("--list"),         SO_NONE    },
     { OPT_LMD,      _T("--lmd"),          SO_NONE    },
     { OPT_ENC,      _T("--encrypt"),      SO_NONE    },
+    { OPT_CHK,      _T("--checksum"),     SO_NONE    },
     { OPT_FILES,    _T("--file"),         SO_REQ_SEP },
     { OPT_ID,       _T("--id"),           SO_REQ_SEP },
     { OPT_DIR,      _T("--directory"),    SO_REQ_SEP },
@@ -275,6 +279,7 @@ int _tmain(int argc, TCHAR** argv)
     t_mixmode mode = NONE;
     bool local_db = false;
     bool encrypt = false;
+    bool checksum = false;
     
     //seed random number generator
     srand(time(NULL));
@@ -319,6 +324,7 @@ int _tmain(int argc, TCHAR** argv)
             {
                 if (args.OptionArg() != NULL) {
                     input_mixfile = string(args.OptionArg());
+                    cout << "Input mix is " << input_mixfile << endl;
                 } else {
                     _tprintf(_T("--mix option requires a mix file.\n"));
                     return 1;
@@ -343,6 +349,11 @@ int _tmain(int argc, TCHAR** argv)
             case OPT_ENC:
             {
                 encrypt = true;
+                break;
+            }
+            case OPT_CHK:
+            {
+                checksum = true;
                 break;
             }
             case OPT_GAME:
@@ -376,6 +387,12 @@ int _tmain(int argc, TCHAR** argv)
             {
                 if (mode != NONE) { NoMultiMode(argv); return 1; }
                 mode = LIST;
+                break;
+            }
+            case OPT_ADD:
+            {
+                if (mode != NONE) { NoMultiMode(argv); return 1; }
+                mode = ADD;
                 break;
             }
             default:
@@ -421,9 +438,28 @@ int _tmain(int argc, TCHAR** argv)
                             user_home_dir));
 
             if (!out_file.createMix(input_mixfile, dir, game, local_db, 
-                 encrypt, findKeySource(getProgramDir(program_path.c_str())))){
+                 encrypt, checksum, findKeySource(getProgramDir(program_path.c_str())))){
                 cout << "Failed to create new mix file" << endl;
                 return 1;
+            }
+            
+            return 0;
+            break;
+        }
+        case ADD:
+        {
+            MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
+                            user_home_dir));
+
+            if (!in_file.open(input_mixfile, game)){
+                cout << "Cannot open specified mix file" << endl;
+                return 1;
+            }
+            
+            if(file == ""){
+                if(checksum){
+                    in_file.addCheckSum();
+                }
             }
             
             return 0;
