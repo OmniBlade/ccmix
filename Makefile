@@ -1,4 +1,4 @@
-CFLAGS=-g -O2 -Wall -Wextra -Isrc -DNDEBUG $(OPTFLAGS)
+CXXFLAGS=-g -O2 -Wall -Wextra -Isrc -DNDEBUG $(OPTFLAGS)
 LIBS=$(OPTLIBS)
 PREFIX?=/usr/local
 CC=g++
@@ -15,7 +15,7 @@ SO_TARGET=$(patsubst %.a,%.so,$(TARGET))
 # The Target Build
 all: $(TARGET)
 
-dev: CFLAGS=-g -Wall -Isrc -Wall -Wexta $(OPTFLAGS)
+dev: CXXFLAGS=-g -Wall -Isrc -Wall -Wexta $(OPTFLAGS)
 dev: all
 
 win32:

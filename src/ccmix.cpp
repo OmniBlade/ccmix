@@ -79,7 +79,7 @@ string findGMD(const string program_dir, const string home_dir)
     gmd_dir[0] = home_dir;
     gmd_dir[1] = "/usr/share/ccmix";
     gmd_dir[2] = program_dir;
-    for (int i = 0; i < gmd_dir.size(); i++) {
+    for (unsigned int i = 0; i < gmd_dir.size(); i++) {
         string gmd_test = gmd_dir[i] + DIR_SEPARATOR + gmd_loc;
         if (FILE *file = fopen(gmd_test.c_str(), "r")) {
             fclose(file);
