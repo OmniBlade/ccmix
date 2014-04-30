@@ -248,6 +248,7 @@ CSimpleOpt::SOption g_rgOptions[] = {
     { OPT_ADD,      _T("--add"),          SO_NONE    },
     { OPT_REM,      _T("--remove"),       SO_NONE    },
     { OPT_LIST,     _T("--list"),         SO_NONE    },
+    { OPT_INFO,     _T("--info"),         SO_NONE    },
     { OPT_LMD,      _T("--lmd"),          SO_NONE    },
     { OPT_ENC,      _T("--encrypt"),      SO_NONE    },
     { OPT_CHK,      _T("--checksum"),     SO_NONE    },
@@ -389,6 +390,12 @@ int _tmain(int argc, TCHAR** argv)
                 mode = LIST;
                 break;
             }
+            case OPT_INFO:
+            {
+                if (mode != NONE) { NoMultiMode(argv); return 1; }
+                mode = INFO;
+                break;
+            }
             case OPT_ADD:
             {
                 if (mode != NONE) { NoMultiMode(argv); return 1; }
@@ -476,6 +483,20 @@ int _tmain(int argc, TCHAR** argv)
             }
             
             cout << in_file.printFileList(1);
+            return 0;
+            break;
+        }
+        case INFO:
+        {
+            MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
+                            user_home_dir));
+
+            if (!in_file.open(input_mixfile, game)){
+                cout << "Cannot open specified mix file" << endl;
+                return 1;
+            }
+            
+            in_file.printInfo();
             return 0;
             break;
         }

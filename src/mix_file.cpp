@@ -37,6 +37,18 @@ void t_mix_header_copy(t_mix_header* header, char * data) {
     memcpy((char *) &(header->size), data, 4);
 }
 
+string printHex(uint8_t* hex_str, int len) {
+    stringstream os;
+    int val;
+    for (int i = 0; i < len; i++) {
+        val = hex_str[i];
+        os << hex << setw(2) << setfill('0') << val;
+    }
+    
+    return os.str();
+    
+}
+
 //MixFile::MixFile(const char * pDirectory, const string gmdFile) {
 MixFile::MixFile(const string gmdFile) {
     this->dataoffset = 0;
@@ -109,10 +121,6 @@ bool MixFile::open(const string path, t_game openGame) {
             fh.seekg(4);
             fh.read(key_source, 80);
             get_blowfish_key((uint8_t *) key_source, (uint8_t *) key);
-            cout << "Key = "; 
-            for(int i = 0; i < 14; i++){
-                cout << *((unsigned int*) (key + i));
-            }
             cout << endl;
             Cblowfish blfish;
             uint8_t enc_header[8];
@@ -142,6 +150,9 @@ bool MixFile::open(const string path, t_game openGame) {
         fh.seekg(6);
         readIndex();
     }
+    
+    fh.seekg(-20, ios::end);
+    fh.read(reinterpret_cast<char*>(m_checksum), 20);
     
     return true;
 }
@@ -470,8 +481,9 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
         writeLmd();
     }
     
+    //just write the checksum, flag is set further up
     if(m_has_checksum){
-        addCheckSum();
+        writeCheckSum();
     }
     
     fh.close();
@@ -707,8 +719,21 @@ string MixFile::printFileList(int flags = 1) {
         os << " " << setw(8) << setfill('0') << hex << files[i].id << " | " << setw(10) << setfill(' ') << dec << (files[i].offset + dataoffset) << " | " << setw(10) << setfill(' ') << files[i].size << endl;
     }
 
-    //return os.str();
-    return "testing";
+    return os.str();
+    //return "testing";
+}
+
+void MixFile::printInfo(){
+    cout << "This Mix contains " << mix_head.c_files << " files.\n"
+            "The files take up " << mix_head.size << " bytes\n" << endl;
+    if(m_is_encrypted){
+        cout << "The mix has an encrypted header.\nThe blowfish key is " <<
+                printHex(reinterpret_cast<uint8_t*>(key), 56) << "\n" << endl;
+    }
+    if(m_has_checksum){
+        cout << "The mix has SHA1 checksum which is\nSHA1: " << 
+                printHex(m_checksum, 20) << "\n" << endl;
+    }
 }
 
 bool MixFile::decrypt(string outPath) {

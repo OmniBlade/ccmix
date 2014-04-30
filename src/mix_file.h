@@ -208,6 +208,13 @@ public:
      */
     std::string printFileList(int flags);
     /**
+     * @brief mix archive header
+     * 
+     * Prints information about the mix file:
+     * file CRC (hex) || file offset (dec) || file size (dec)
+     */
+    void printInfo();
+    /**
      * @brief count CRC ID from filename
      * @param game t_game game selection
      * @param name filename
@@ -254,6 +261,7 @@ protected:
     int32_t decrypt_size; // size of valid buffer data
     t_id_datamap name_map;
     t_game mixGame;
+    uint8_t m_checksum[20];
 };
 
 #endif	/* MIX_FILE_H */
