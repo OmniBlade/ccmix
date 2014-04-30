@@ -31,29 +31,6 @@ using namespace std;
 
 #endif
 
-//overload operator<< to print game_xx
-std::ostream& operator<<(std::ostream& out, const t_game value){
-    const char* s = 0;
-#define PROCESS_VAL(p) case(p): s = #p; break;
-    switch(value){
-        PROCESS_VAL(game_td);     
-        PROCESS_VAL(game_ra);     
-        PROCESS_VAL(game_ts);
-    }
-#undef PROCESS_VAL
-
-    return out << s;
-}
-
-void hexPrinter(uint8_t* value, int len){
-    uint32_t val;
-    for(int i = 0; i < len; i++){
-        val = value[i];
-        cout << hex << setw(2) << setfill('0') << val;
-    }
-    cout << dec << endl;
-}
-
 void t_mix_header_copy(t_mix_header* header, char * data) {
     memcpy((char *) &(header->c_files), data, 2);
     data += 2;
@@ -73,7 +50,7 @@ MixFile::~MixFile() {
     fh.close();
 }
 
-int32_t MixFile::getID(t_game game, string name) {
+uint32_t MixFile::getID(t_game game, string name) {
     transform(name.begin(), name.end(), name.begin(),
             (int(*)(int)) toupper); // convert to uppercase
     if (game != game_ts) { // for TD and RA
@@ -118,11 +95,7 @@ bool MixFile::open(const string path, t_game openGame) {
         cout << "File " << path << " failed to open" << endl;
         return false;
     }
-    
-    fh.seekg(0, ios::beg);
 
-    cout << "Mix header is " << sizeof(t_mix_header) << " bytes" << endl;
-    
     fh.read((char*) &mix_head, sizeof (mix_head));
     dataoffset = 6;
     
@@ -137,7 +110,10 @@ bool MixFile::open(const string path, t_game openGame) {
             fh.read(key_source, 80);
             get_blowfish_key((uint8_t *) key_source, (uint8_t *) key);
             cout << "Key = "; 
-            hexPrinter((uint8_t *) key, 56);
+            for(int i = 0; i < 14; i++){
+                cout << *((unsigned int*) (key + i));
+            }
+            cout << endl;
             Cblowfish blfish;
             uint8_t enc_header[8];
             blfish.set_key((uint8_t *) key, 56);
@@ -145,11 +121,8 @@ bool MixFile::open(const string path, t_game openGame) {
             /* read encrypted header */
             fh.seekg(84);
             fh.read((char*) enc_header, 8);
-            cout << "After encrypted header read we are at " << fh.tellg() << endl;
             blfish.decipher((void *) enc_header, (void *) enc_header, 8);
-            //t_mix_header_copy(&mix_head, (char *) enc_header);
-            memcpy(reinterpret_cast<char*> (&mix_head.c_files), enc_header, 2);
-            memcpy(reinterpret_cast<char*> (&mix_head.size), enc_header, 4);
+            t_mix_header_copy(&mix_head, (char *) enc_header);
 
             /* encrypted block has 8b, but header only 6b => 2b is part of first index entry */
             memcpy(decrypt_buffer, (char*) (&enc_header) + 6, 2);
@@ -159,18 +132,14 @@ bool MixFile::open(const string path, t_game openGame) {
             readEncryptedIndex();
         } else {
             fh.seekg(4);
-            fh.read((char*) &mix_head.c_files, 2);
-            fh.read((char*) &mix_head.size, 4);
+            fh.read((char*) &mix_head, 6);
             cout << "Header reported size on read is " << mix_head.size << endl;
             readIndex();
         }
 
     } else {
-        fh.seekg(0, ios::beg);
-        fh.read((char*) &mix_head.c_files, 2);
-        fh.read((char*) &mix_head.size, 4);
         cout << "Header reported size on read is " << mix_head.size << endl;
-        //fh.seekg(6);
+        fh.seekg(6);
         readIndex();
     }
     
@@ -261,7 +230,7 @@ bool MixFile::readEncryptedIndex() {
 bool MixFile::checkFileName(string fname) {
     transform(fname.begin(), fname.end(), fname.begin(),
             (int(*)(int)) toupper);
-    int32_t fileID = getID(mixGame, fname);
+    uint32_t fileID = getID(mixGame, fname);
     for (uint32_t i = 0; i < files.size(); i++) {
         if (files[i].id == fileID)
             return true;
@@ -308,7 +277,7 @@ bool MixFile::extractAllFast(string outPath) {
     return true;
 }
 
-bool MixFile::extractFile(int32_t fileID, string outPath) {
+bool MixFile::extractFile(uint32_t fileID, string outPath) {
     ofstream oFile;
     uint32_t f_offset = 0, f_size = 0;
     char * buffer;
@@ -368,8 +337,6 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     //set which game we are writing for
     mixGame = game;
     
-    //If game is TD, disable encryption and checksum if specified and warn
-    //user why.
     if(mixGame == game_td) {
         if(encrypted){
             cout << "Encryption not supported with TD mix files, "
@@ -383,10 +350,15 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
             m_has_checksum = false;
         }
     } else {
-        m_is_encrypted = encrypted;
-        m_has_checksum = checksum;
-        if(m_is_encrypted) flags |= mix_encrypted;
-        if(m_has_checksum) flags |= mix_checksum;
+        if(encrypted){
+                m_is_encrypted = true;
+                flags |= mix_encrypted;
+            }
+
+            if(checksum) {
+                m_has_checksum = true;
+                flags |= mix_checksum;
+            }
     }
     
     cout << "Game we are building for is " << mixGame << endl;
@@ -498,9 +470,8 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
         writeLmd();
     }
     
-    //write the checksum if required
     if(m_has_checksum){
-        writeCheckSum();
+        addCheckSum();
     }
     
     fh.close();
@@ -516,7 +487,7 @@ bool MixFile::writeHeader(int16_t c_files, int32_t size, uint32_t flags) {
     fh.write(reinterpret_cast <const char*> (&size), sizeof(size));
     
     //write the index
-    for(uint32_t i = 0; i < files.size(); i++) {
+    for(int i = 0; i < files.size(); i++) {
         fh.write(reinterpret_cast <const char*> (&files[i]), 
                  sizeof(t_mix_index_entry));
     }
@@ -567,7 +538,10 @@ bool MixFile::writeEncryptedHeader(int16_t c_files, int32_t size, uint32_t flags
     //get ready for encryption
     get_blowfish_key((uint8_t *) key_source, (uint8_t *) key);
     cout << "Key = "; 
-    hexPrinter((uint8_t *) key, 56);
+    for(int i = 0; i < 14; i++){
+        cout << *((unsigned int*) (key + i));
+    }
+    cout << endl;
     
     blfish.set_key((uint8_t *) key, 56);
     
@@ -609,7 +583,7 @@ uint32_t MixFile::lmdSize() {
     //lmd header is 52 bytes big
     uint32_t rv = sizeof(xcc_id);
     rv += sizeof(padded_size);
-    for (uint32_t i = 0; i < filenames.size(); i++){
+    for (int i = 0; i < filenames.size(); i++){
         rv += filenames[i].size();
     }
     //add number of files to account for null termination
@@ -651,8 +625,8 @@ bool MixFile::writeCheckSum() {
     SHA1 sha1;
     const size_t BufferSize = 144*7*1024; 
     char* buffer = new char[BufferSize];
-    //int blocks = mix_head.size / BufferSize;
-    //int rem = mix_head.size % BufferSize;
+    int blocks = mix_head.size / BufferSize;
+    int rem = mix_head.size % BufferSize;
     uint8_t* hash;
     ofstream testout;
     
@@ -681,8 +655,6 @@ bool MixFile::writeCheckSum() {
     
     delete[] buffer;
     free(hash);
-    
-    return true;
 }
 
 bool MixFile::readFileNames() {
@@ -736,7 +708,7 @@ string MixFile::printFileList(int flags = 1) {
     }
 
     //return os.str();
-    return "testing \n";
+    return "testing";
 }
 
 bool MixFile::decrypt(string outPath) {

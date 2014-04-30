@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 CXXFLAGS=-g -O2 -Wall -Wextra -Isrc -DNDEBUG -mno-ms-bitfields $(OPTFLAGS)
+=======
+CFLAGS=-g -O2 -Wall -Wextra -Isrc -DNDEBUG $(OPTFLAGS)
+>>>>>>> parent of b6ed127... Resolving some issues with struct packing on Centos
 LIBS=$(OPTLIBS)
 PREFIX?=/usr/local
 CC=g++
@@ -15,7 +19,11 @@ SO_TARGET=$(patsubst %.a,%.so,$(TARGET))
 # The Target Build
 all: $(TARGET)
 
+<<<<<<< HEAD
 dev: CXXFLAGS=-g -Wall -Isrc -Wall -Wexta -mno-ms-bitfields $(OPTFLAGS)
+=======
+dev: CFLAGS=-g -Wall -Isrc -Wall -Wexta $(OPTFLAGS)
+>>>>>>> parent of b6ed127... Resolving some issues with struct packing on Centos
 dev: all
 
 win32:

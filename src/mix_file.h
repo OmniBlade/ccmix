@@ -92,7 +92,7 @@ struct t_mix_index_entry
     uint32_t size;                       // size of this internal file
 };
 
-typedef enum t_game
+typedef enum 
 { 
     game_td,
     game_ra,
@@ -154,7 +154,7 @@ public:
      * @retval true file extracted
      * @retval false file not present in the archive 
      */
-    bool extractFile(int32_t fileID, std::string outPath);
+    bool extractFile(uint32_t fileID, std::string outPath);
     /**
      * @brief extract file from mix archive
      * @param fileName name of file
@@ -188,8 +188,7 @@ public:
                    std::string key_src = "");
     /**
      * @brief adds a sha1 checksum to the end of the file and flags it in the
-     * header.
-     * @param flag forces writing of checksum even if m_has_checksum set
+     *        header.
      * @return true if successful
      */
     bool addCheckSum();
@@ -214,7 +213,7 @@ public:
      * @param name filename
      * @return  CRC ID of file
      */
-    int32_t getID(t_game game, std::string name);
+    uint32_t getID(t_game game, std::string name);
     /**
      * @brief save file in decrypted format
      * @param outPath output filename
