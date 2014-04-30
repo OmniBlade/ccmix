@@ -540,8 +540,8 @@ bool MixFile::writeEncryptedHeader(int16_t c_files, int32_t size, uint32_t flags
     //write keysource
     fh.write(key_source, 80);
     
-    //work out our header sizes
-    head_size = (c_files * sizeof(t_mix_index_entry)) + sizeof(t_mix_header);
+    //work out our header sizes, header itself is 6, can't rely on struct size
+    head_size = (c_files * sizeof(t_mix_index_entry)) + 6;
     block_count = head_size / 8;
     rem = head_size % 8;
     if(rem) block_count++;
