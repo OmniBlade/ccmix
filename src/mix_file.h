@@ -127,7 +127,7 @@ const char xcc_id[] = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x19\x80";
 
 const std::string lmd_name = "local mix database.dat"; 
 
-typedef std::map<uint32_t, t_id_data> t_id_datamap;
+typedef std::map<int32_t, t_id_data> t_id_datamap;
 
 /**
  * @brief mix file controller
@@ -154,7 +154,7 @@ public:
      * @retval true file extracted
      * @retval false file not present in the archive 
      */
-    bool extractFile(uint32_t fileID, std::string outPath);
+    bool extractFile(int32_t fileID, std::string outPath);
     /**
      * @brief extract file from mix archive
      * @param fileName name of file
@@ -220,7 +220,7 @@ public:
      * @param name filename
      * @return  CRC ID of file
      */
-    uint32_t getID(t_game game, std::string name);
+    int32_t getID(t_game game, std::string name);
     /**
      * @brief save file in decrypted format
      * @param outPath output filename
@@ -253,6 +253,7 @@ protected:
     std::vector<std::string> filenames; // file names
     bool m_is_encrypted;
     bool m_has_checksum;
+    bool m_has_neoheader;
     int32_t dataoffset;
     std::fstream fh; // file handler
     char key_source[80];

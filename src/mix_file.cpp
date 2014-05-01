@@ -62,7 +62,7 @@ MixFile::~MixFile() {
     fh.close();
 }
 
-uint32_t MixFile::getID(t_game game, string name) {
+int32_t MixFile::getID(t_game game, string name) {
     transform(name.begin(), name.end(), name.begin(),
             (int(*)(int)) toupper); // convert to uppercase
     if (game != game_ts) { // for TD and RA
@@ -110,11 +110,12 @@ bool MixFile::open(const string path, t_game openGame) {
 
     fh.read((char*) &mix_head, sizeof (mix_head));
     dataoffset = 6;
-    
+   
     if (!mix_head.c_files) {
         dataoffset += 4;
         m_has_checksum = mix_head.flags & mix_checksum;
         m_is_encrypted = mix_head.flags & mix_encrypted;
+        m_has_neoheader = true;
         if (m_is_encrypted) {
             
             /* read key_source */
@@ -136,17 +137,24 @@ bool MixFile::open(const string path, t_game openGame) {
             memcpy(decrypt_buffer, (char*) (&enc_header) + 6, 2);
             decrypt_size = 2;
             
-            cout << "Header reported size on read is " << mix_head.size << endl;
+            cout << "Header reported size on Enc read is " << mix_head.size << endl;
             readEncryptedIndex();
         } else {
             fh.seekg(4);
-            fh.read((char*) &mix_head, 6);
-            cout << "Header reported size on read is " << mix_head.size << endl;
+            fh.read((char*) &mix_head.c_files, 2);
+            fh.read((char*) &mix_head.size, 4);
+            cout << "Header reported size on UnEnc read is " << mix_head.size << endl;
+            cout << printHex(reinterpret_cast<uint8_t*>(&mix_head), 8) << endl;
             readIndex();
         }
 
     } else {
-        cout << "Header reported size on read is " << mix_head.size << endl;
+        m_has_neoheader = false;
+        fh.seekg(0, ios::beg);
+        fh.read((char*) &mix_head.c_files, 2);
+        fh.read((char*) &mix_head.size, 4);
+        cout << "Header reported size on TD read is " << mix_head.size << endl;
+        cout << printHex(reinterpret_cast<uint8_t*>(&mix_head), 8) << endl;
         fh.seekg(6);
         readIndex();
     }
@@ -241,7 +249,7 @@ bool MixFile::readEncryptedIndex() {
 bool MixFile::checkFileName(string fname) {
     transform(fname.begin(), fname.end(), fname.begin(),
             (int(*)(int)) toupper);
-    uint32_t fileID = getID(mixGame, fname);
+    int32_t fileID = getID(mixGame, fname);
     for (uint32_t i = 0; i < files.size(); i++) {
         if (files[i].id == fileID)
             return true;
@@ -288,7 +296,7 @@ bool MixFile::extractAllFast(string outPath) {
     return true;
 }
 
-bool MixFile::extractFile(uint32_t fileID, string outPath) {
+bool MixFile::extractFile(int32_t fileID, string outPath) {
     ofstream oFile;
     uint32_t f_offset = 0, f_size = 0;
     char * buffer;
@@ -499,7 +507,7 @@ bool MixFile::writeHeader(int16_t c_files, int32_t size, uint32_t flags) {
     fh.write(reinterpret_cast <const char*> (&size), sizeof(size));
     
     //write the index
-    for(int i = 0; i < files.size(); i++) {
+    for(unsigned int i = 0; i < files.size(); i++) {
         fh.write(reinterpret_cast <const char*> (&files[i]), 
                  sizeof(t_mix_index_entry));
     }
@@ -595,7 +603,7 @@ uint32_t MixFile::lmdSize() {
     //lmd header is 52 bytes big
     uint32_t rv = sizeof(xcc_id);
     rv += sizeof(padded_size);
-    for (int i = 0; i < filenames.size(); i++){
+    for (unsigned int i = 0; i < filenames.size(); i++){
         rv += filenames[i].size();
     }
     //add number of files to account for null termination
@@ -637,8 +645,8 @@ bool MixFile::writeCheckSum() {
     SHA1 sha1;
     const size_t BufferSize = 144*7*1024; 
     char* buffer = new char[BufferSize];
-    int blocks = mix_head.size / BufferSize;
-    int rem = mix_head.size % BufferSize;
+    //int blocks = mix_head.size / BufferSize;
+    //int rem = mix_head.size % BufferSize;
     uint8_t* hash;
     ofstream testout;
     
@@ -667,6 +675,8 @@ bool MixFile::writeCheckSum() {
     
     delete[] buffer;
     free(hash);
+    
+    return false;
 }
 
 bool MixFile::readFileNames() {
@@ -724,14 +734,27 @@ string MixFile::printFileList(int flags = 1) {
 }
 
 void MixFile::printInfo(){
-    cout << "This Mix contains " << mix_head.c_files << " files.\n"
-            "The files take up " << mix_head.size << " bytes\n" << endl;
+    if(m_has_neoheader){
+        cout << "This mix is a new style mix that supports header encryption"
+                "and checksums.\n Red Alert onwards can read this type of mix"
+                "but the ID's used differ between Red Alert and later games.\n"
+                << endl;
+    } else {
+        cout << "This mix is an old style mix that doesn't support header"
+                "encryption or checksums.\n Tiberian Dawn and Sole Survivor"
+                "use this format and Red Alert can use them also.\n" << endl;
+    }
+    cout << "It contains " << mix_head.c_files << " files"
+            " which take up " << mix_head.size << " bytes\n" << endl;
     if(m_is_encrypted){
-        cout << "The mix has an encrypted header.\nThe blowfish key is " <<
+        cout << "The mix has an encrypted header.\n\nThe blowfish key is " <<
                 printHex(reinterpret_cast<uint8_t*>(key), 56) << "\n" << endl;
+        cout << "The key was recovered from the following key source:\n" <<
+                printHex(reinterpret_cast<uint8_t*>(key_source), 80) << "\n" <<
+                endl;
     }
     if(m_has_checksum){
-        cout << "The mix has SHA1 checksum which is\nSHA1: " << 
+        cout << "The mix has a SHA1 checksum:\nSHA1: " << 
                 printHex(m_checksum, 20) << "\n" << endl;
     }
 }
@@ -794,7 +817,7 @@ void MixFile::readLocalMixDb(uint32_t offset, uint32_t size)
         //get data and move pointer to next entry
         id_data.name = data;
         data += id_data.name.length() + 1;
-        name_map.insert(pair<uint32_t,t_id_data>(getID(mixGame,
+        name_map.insert(pair<int32_t,t_id_data>(getID(mixGame,
                         id_data.name), id_data));
     }
 }
@@ -835,7 +858,7 @@ void MixFile::readGlobalMixDb(string filePath)
         data += id_data.name.length() + 1;
         id_data.description = data;
         data += id_data.description.length() + 1;
-        name_map.insert(pair<uint32_t,t_id_data>(getID(mixGame,
+        name_map.insert(pair<int32_t,t_id_data>(getID(mixGame,
                         id_data.name), id_data));
         //mix db is several databases on top of one another.
         if (count < 1 && data < data_end){
