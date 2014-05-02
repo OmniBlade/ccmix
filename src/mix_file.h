@@ -128,6 +128,7 @@ const char xcc_id[] = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x19\x80";
 const std::string lmd_name = "local mix database.dat"; 
 
 typedef std::map<int32_t, t_id_data> t_id_datamap;
+typedef std::pair<int32_t, t_id_data> t_id_datapair;
 
 /**
  * @brief mix file controller
@@ -137,7 +138,8 @@ typedef std::map<int32_t, t_id_data> t_id_datamap;
  */
 class MixFile {
 public:
-    MixFile(const std::string gmd = "global mix database.dat");
+    MixFile(const std::string gmd = "global mix database.dat" , 
+            t_game openGame = game_td);
     //MixFile(const MixFile& orig);
     virtual ~MixFile();
     /**
@@ -146,7 +148,7 @@ public:
      * @retval true file opened
      * @retval false file not found
      */
-    bool open(const std::string path, t_game openGame = game_td);
+    bool open(const std::string path);
     /**
      * @brief extract file from mix archive
      * @param fileID CRC ID of file
@@ -242,8 +244,8 @@ protected:
     bool extractAllFast(std::string outPath = ".");
     void readLocalMixDb(uint32_t offset, uint32_t size);
     void readGlobalMixDb(std::string filePath);
-    bool writeHeader(int16_t c_files, int32_t size, uint32_t flags = 0);
-    bool writeEncryptedHeader(int16_t c_files, int32_t size, uint32_t flags = 0);
+    bool writeHeader(int16_t c_files, uint32_t flags = 0);
+    bool writeEncryptedHeader(int16_t c_files, uint32_t flags = 0);
     bool writeLmd();
     bool writeCheckSum();
     uint32_t lmdSize();
@@ -254,6 +256,7 @@ protected:
     bool m_is_encrypted;
     bool m_has_checksum;
     bool m_has_neoheader;
+    bool m_has_lmd;
     int32_t dataoffset;
     std::fstream fh; // file handler
     char key_source[80];

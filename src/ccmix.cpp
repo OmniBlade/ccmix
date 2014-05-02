@@ -426,9 +426,9 @@ int _tmain(int argc, TCHAR** argv)
         case EXTRACT:
         {
             MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
-                            user_home_dir));
+                            user_home_dir), game);
 
-            if (!in_file.open(input_mixfile, game)){
+            if (!in_file.open(input_mixfile)){
                 cout << "Cannot open specified mix file" << endl;
                 return 1;
             }
@@ -456,9 +456,9 @@ int _tmain(int argc, TCHAR** argv)
         case ADD:
         {
             MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
-                            user_home_dir));
+                            user_home_dir), game);
 
-            if (!in_file.open(input_mixfile, game)){
+            if (!in_file.open(input_mixfile)){
                 cout << "Cannot open specified mix file" << endl;
                 return 1;
             }
@@ -475,9 +475,9 @@ int _tmain(int argc, TCHAR** argv)
         case LIST:
         {
             MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
-                            user_home_dir));
+                            user_home_dir), game);
 
-            if (!in_file.open(input_mixfile, game)){
+            if (!in_file.open(input_mixfile)){
                 cout << "Cannot open specified mix file" << endl;
                 return 1;
             }
@@ -489,9 +489,9 @@ int _tmain(int argc, TCHAR** argv)
         case INFO:
         {
             MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
-                            user_home_dir));
+                            user_home_dir), game);
 
-            if (!in_file.open(input_mixfile, game)){
+            if (!in_file.open(input_mixfile)){
                 cout << "Cannot open specified mix file" << endl;
                 return 1;
             }
