@@ -351,6 +351,7 @@ bool MixFile::createMix(string fileName, string in_dir, t_game game,
     vector<uint32_t> id_list;
     uint32_t flags = 0;
     //char* buff;
+    mix_head.size = 0;
     
     //ensure vectors are clear
     filenames.clear();
