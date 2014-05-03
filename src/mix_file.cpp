@@ -591,7 +591,7 @@ bool MixFile::writeEncryptedHeader(int16_t c_files, uint32_t flags) {
 bool MixFile::writeLmd() {
     // this is the rest of the header that follows xcc_id
     uint32_t padded_size[] = {files[files.size() - 1].size, 0, 0, 0, 
-                              filenames.size()};
+                              static_cast<uint32_t>(filenames.size())};
     //xcc id
     fh.write(xcc_id, sizeof(xcc_id));
     //rest of header
@@ -606,7 +606,7 @@ bool MixFile::writeLmd() {
 //calculate the size of an lmd from filenames
 uint32_t MixFile::lmdSize() {
     uint32_t padded_size[] = {files[files.size() - 1].size, 0, 0, 0, 
-                              filenames.size()};
+                              static_cast<uint32_t>(filenames.size())};
     //lmd header is 52 bytes big
     uint32_t rv = sizeof(xcc_id);
     rv += sizeof(padded_size);

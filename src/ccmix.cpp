@@ -175,8 +175,10 @@ bool Extraction(MixFile& in_file, string filename, string outdir, uint32_t id)
     string destination = outdir + DIR_SEPARATOR + filename;
     
     if (filename == "" && id == 0) {
-        cout << "No file or ID to extract given" << endl;
-        return false;
+        if (!in_file.extractAll(outdir)) {
+            cout << "Extraction failed" << endl;
+            return false;
+        }
     } else if (filename != "" && id == 0) {
         if (!in_file.extractFile(filename, destination)) {
             cout << "Extraction failed" << endl;
@@ -188,6 +190,7 @@ bool Extraction(MixFile& in_file, string filename, string outdir, uint32_t id)
         if (filename == ""){
             cout << "You must specify a filename to extract to when giving "
                     "an ID" << endl;
+            return false;
         }
         if (!in_file.extractFile(id, destination)) {
             cout << "Extraction failed" << endl;
@@ -196,14 +199,10 @@ bool Extraction(MixFile& in_file, string filename, string outdir, uint32_t id)
             return true;
         }
     } else {
-        //cout << input_mixfile << "\nExtract to dir " << outdir << endl;
-        if (!in_file.extractAll(outdir)) {
-            cout << "Extraction failed" << endl;
-            return false;
-        } else {
-            return true;
-        }
+        cout << "You have used an unsupported combination of options." << endl;
+        return false;
     }
+    return false;
 }
 
 //Return a string of the home dir path
