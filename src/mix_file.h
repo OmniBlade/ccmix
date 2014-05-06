@@ -222,7 +222,7 @@ public:
      * @param name filename
      * @return  CRC ID of file
      */
-    int32_t getID(t_game game, std::string name);
+    static int32_t getID(t_game game, std::string name);
     /**
      * @brief save file in decrypted format
      * @param outPath output filename
@@ -250,6 +250,8 @@ protected:
     bool writeCheckSum();
     uint32_t lmdSize();
     static bool compareId(const t_mix_index_entry &a, const t_mix_index_entry &b);
+    static bool compareTdName(const std::string &a, const std::string &b);
+    static bool compareTsName(const std::string &a, const std::string &b);
     t_mix_header mix_head; // mix file header
     std::vector<t_mix_index_entry> files; // list of file headers
     std::vector<std::string> filenames; // file names

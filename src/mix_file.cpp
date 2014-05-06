@@ -338,6 +338,20 @@ bool MixFile::compareId(const t_mix_index_entry &a,
     return a.id < b.id;
 }
 
+bool MixFile::compareTdName(const std::string &a, const std::string &b){
+    int32_t ida = getID(game_td, a);
+    int32_t idb = getID(game_td, b);
+    
+    return ida < idb;
+}
+
+bool MixFile::compareTsName(const std::string &a, const std::string &b){
+    int32_t ida = getID(game_ts, a);
+    int32_t idb = getID(game_ts, b);
+    
+    return ida < idb;
+}
+
 bool MixFile::createMix(string fileName, string in_dir, t_game game, 
                         bool with_lmd, bool encrypted, bool checksum, 
                         string key_src) {
@@ -539,7 +553,8 @@ bool MixFile::writeEncryptedHeader(int16_t c_files, uint32_t flags) {
     fh.write(key_source, 80);
     
     //work out our header sizes, header itself is 6, can't rely on struct size
-    head_size = (c_files * sizeof(t_mix_index_entry)) + 6;
+    //file entries are 12
+    head_size = (c_files * 12) + 6;
     block_count = head_size / 8;
     rem = head_size % 8;
     if(rem) block_count++;
@@ -589,27 +604,32 @@ bool MixFile::writeEncryptedHeader(int16_t c_files, uint32_t flags) {
 
 //write an lmd file
 bool MixFile::writeLmd() {
+    vector<string> lmd_files = filenames;
+    
+    if(mixGame == game_ts){
+        std::sort(lmd_files.begin(), lmd_files.end(), MixFile::compareTsName);
+    } else {
+        std::sort(lmd_files.begin(), lmd_files.end(), MixFile::compareTdName);
+    }
+    
     // this is the rest of the header that follows xcc_id
-    uint32_t padded_size[] = {files[files.size() - 1].size, 0, 0, 0, 
-                              static_cast<uint32_t>(filenames.size())};
+    uint32_t padded_size[] = {lmdSize(), 0, 0, mixGame, 
+                              static_cast<uint32_t>(lmd_files.size())};
     //xcc id
     fh.write(xcc_id, sizeof(xcc_id));
     //rest of header
     fh.write(reinterpret_cast<const char*> (padded_size), sizeof(padded_size));
     //filenames
-    for(unsigned int i = 0; i < filenames.size(); i++){
-        fh.write(filenames[i].c_str(), filenames[i].size() + 1);
+    for(unsigned int i = 0; i < lmd_files.size(); i++){
+        fh.write(lmd_files[i].c_str(), lmd_files[i].size() + 1);
     }
     return true;
 }
 
 //calculate the size of an lmd from filenames
 uint32_t MixFile::lmdSize() {
-    uint32_t padded_size[] = {files[files.size() - 1].size, 0, 0, 0, 
-                              static_cast<uint32_t>(filenames.size())};
     //lmd header is 52 bytes big
-    uint32_t rv = sizeof(xcc_id);
-    rv += sizeof(padded_size);
+    uint32_t rv = 52;
     for (unsigned int i = 0; i < filenames.size(); i++){
         rv += filenames[i].size();
     }
