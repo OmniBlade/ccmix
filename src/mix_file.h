@@ -196,6 +196,12 @@ public:
     bool addCheckSum();
     /**
      * @brief checks, if file is present in the archive
+     * @param fileName file name
+     * @return true if successful
+     */
+    bool addFile(std::string fileName);
+    /**
+     * @brief checks, if file is present in the archive
      * @param fname file name
      * @return true if present
      */
@@ -244,11 +250,12 @@ protected:
     bool extractAllFast(std::string outPath = ".");
     void readLocalMixDb(uint32_t offset, uint32_t size);
     void readGlobalMixDb(std::string filePath);
-    bool writeHeader(int16_t c_files, uint32_t flags = 0);
-    bool writeEncryptedHeader(int16_t c_files, uint32_t flags = 0);
-    bool writeLmd();
-    bool writeCheckSum();
+    bool writeHeader(std::fstream &fh, int16_t c_files, uint32_t flags = 0);
+    bool writeEncryptedHeader(std::fstream &fh, int16_t c_files, uint32_t flags = 0);
+    bool writeLmd(std::fstream &fh);
+    bool writeCheckSum(std::fstream &fh);
     uint32_t lmdSize();
+    std::string baseName(std::string const& pathname);
     static bool compareId(const t_mix_index_entry &a, const t_mix_index_entry &b);
     static bool compareTdName(const std::string &a, const std::string &b);
     static bool compareTsName(const std::string &a, const std::string &b);
