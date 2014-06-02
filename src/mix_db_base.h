@@ -38,10 +38,12 @@ public:
         {   
         }
         
-    virtual void readDB() = 0;
-    virtual void writeDB() = 0;
+    //virtual void readDB() = 0;
+    //virtual void writeDB() = 0;
     virtual std::string getName() = 0;
-    bool addName() = 0;
+    virtual bool addName() = 0;
+    virtual bool deleteName() = 0;
+    virtual bool deleteID() = 0;
     
     t_game getGame() { return m_game_type; }
 };

@@ -64,7 +64,7 @@ namespace MixID
     {
         std::transform(fname.begin(), fname.end(), fname.begin(),
                 (int(*)(int)) toupper); // convert to uppercase
-        if (game != game_ts) { // for TD and RA
+        if (game <= game_ra) { // for TD and RA
             int i = 0;
             uint32_t id = 0;
             int l = fname.length(); // length of the filename
@@ -98,5 +98,14 @@ namespace MixID
         std::stringstream os;
         os << std::setw(8) << std::setfill('0') << std::hex << id << std::dec;
         return os.str();
+    }
+    
+    int32_t strId(std::string hex)
+    {
+        uint32_t rv;   
+        std::stringstream ss;
+        ss << std::hex << hex;
+        ss >> rv;
+        return rv;
     }
 }

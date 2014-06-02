@@ -22,6 +22,7 @@ public:
     void writeDB(std::fstream &fh);
     std::string getName(int32_t id);
     bool addName(std::string name);
+    bool deleteName(std::string name);
     
 private:
     typedef std::map<int32_t, std::string> t_id_map;

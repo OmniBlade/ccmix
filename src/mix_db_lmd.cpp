@@ -57,6 +57,7 @@ void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
 void MixLMD::writeDB(std::fstream& fh)
 {    
     // this is the rest of the header that follows xcc_id
+    // two 0 constants are xcc type and xcc version according to xcc spec.
     uint32_t xcc_head[] = {m_size, 0, 0, m_game_type, 
                               static_cast<uint32_t>(m_name_map.size())};
     //xcc id
