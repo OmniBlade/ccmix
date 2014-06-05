@@ -9,8 +9,7 @@ const char MixLMD::m_xcc_id[] = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x1
 
 MixLMD::MixLMD(t_game game)
 {
-    BaseMixDB(game);
-    //lmd header size is 52bytes so set initial size to that
+    m_game_type = game;
     m_size = 52;
 }
 
@@ -37,7 +36,7 @@ void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
     //local mix db doesn't have descriptions.
     string id_data;
     while (count--) {
-        std::pair rv;
+        std::pair<t_id_iter,bool> rv;
         id_data = data;
         data += id_data.length() + 1;
         rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type,
@@ -83,7 +82,7 @@ std::string MixLMD::getName(int32_t id)
 
 bool MixLMD::addName(std::string name)
 {
-    std::pair rv;
+    std::pair<t_id_iter,bool> rv;
     rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type,
                     name), name));
     if(rv.second) {

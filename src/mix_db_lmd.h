@@ -8,13 +8,11 @@
 #ifndef MIX_DB_LMD_H
 #define	MIX_DB_LMD_H
 
-#include "mix_db_base.h"
-
 #include <fstream>
 //#include <vector>
 #include <map>
 
-class MixLMD : public BaseMixDB
+class MixLMD
 {
 public:
     MixLMD(t_game game);
@@ -23,6 +21,7 @@ public:
     std::string getName(int32_t id);
     bool addName(std::string name);
     bool deleteName(std::string name);
+    t_game getGame() { return m_game_type; }
     
 private:
     typedef std::map<int32_t, std::string> t_id_map;
@@ -32,6 +31,7 @@ private:
     //const std::string m_lmd_name; // = "local mix database.dat";
     t_id_map m_name_map;
     uint32_t m_size;
+    t_game m_game_type;
 };
 
 #endif	/* MIX_DB_LMD_H */

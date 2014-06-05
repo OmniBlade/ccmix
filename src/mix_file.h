@@ -92,12 +92,13 @@ struct t_mix_index_entry
     uint32_t size;                       // size of this internal file
 };
 
-typedef enum 
+//Now handled by mixid.h
+/* typedef enum 
 { 
     game_td,
     game_ra,
     game_ts
-} t_game;
+} t_game; */
 
 const int32_t mix_checksum = 0x00010000;
 const int32_t mix_encrypted = 0x00020000;

@@ -24,17 +24,6 @@ typedef enum
     game_dune2,
     game_dune2000,
     game_ra2,
-    game_ra2_yr,
-    game_rg,
-    game_gr,
-    game_gr_zh,
-    game_ebfd,
-    game_nox,
-    game_bfme,
-    game_bfme2,
-    game_tw,
-    game_ts_fs,
-    game_unknown
 } t_game;
 
 namespace MixID
