@@ -28,8 +28,8 @@ public:
     
 private:
     struct t_id_data {
-    std::string name;
-    std::string description;
+        std::string name;
+        std::string description;
     };
     
     typedef std::map<int32_t, t_id_data> t_id_map;
