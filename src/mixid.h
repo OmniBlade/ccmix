@@ -30,6 +30,7 @@ namespace MixID
 {
     int32_t idGen(t_game game, std::string fname);
     std::string idStr(int32_t id);
+    std::string idStr(char* id, uint32_t size);
     int32_t strId(std::string hex);
 }
 

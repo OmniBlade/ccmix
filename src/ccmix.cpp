@@ -441,9 +441,9 @@ int _tmain(int argc, TCHAR** argv)
         case CREATE:
         {
             MixFile out_file(findGMD(getProgramDir(program_path.c_str()), 
-                            user_home_dir));
+                            user_home_dir), game);
 
-            if (!out_file.createMix(input_mixfile, dir, game, local_db, 
+            if (!out_file.createMix(input_mixfile, dir, local_db, 
                  encrypt, checksum, findKeySource(getProgramDir(program_path.c_str())))){
                 cout << "Failed to create new mix file" << endl;
                 return 1;
@@ -481,7 +481,7 @@ int _tmain(int argc, TCHAR** argv)
                 return 1;
             }
             
-            cout << in_file.printFileList(1);
+            cout << in_file.printFileList();
             return 0;
             break;
         }

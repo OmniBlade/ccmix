@@ -8,6 +8,7 @@
 #ifndef MIX_DB_LMD_H
 #define	MIX_DB_LMD_H
 
+#include "mixid.h"
 #include <fstream>
 //#include <vector>
 #include <map>
@@ -22,16 +23,18 @@ public:
     bool addName(std::string name);
     bool deleteName(std::string name);
     t_game getGame() { return m_game_type; }
+    uint32_t getSize() { return m_size; }
+    std::string getDBName() { return "local mix database.dat"; }
     
 private:
     typedef std::map<int32_t, std::string> t_id_map;
     typedef std::pair<int32_t, std::string> t_id_pair;
     typedef std::map<int32_t, std::string>::const_iterator t_id_iter;
-    const char m_xcc_id[]; // = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x19\x80";
-    //const std::string m_lmd_name; // = "local mix database.dat";
+    static const char m_xcc_id[32];
     t_id_map m_name_map;
     uint32_t m_size;
     t_game m_game_type;
+    int32_t m_id;
 };
 
 #endif	/* MIX_DB_LMD_H */

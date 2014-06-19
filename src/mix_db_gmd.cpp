@@ -1,6 +1,12 @@
 #include "mix_db_gmd.h"
 
-MixGMD::MixGMD(){
+MixGMD::MixGMD() :
+m_td_list(game_td),
+m_ra_list(game_ra),
+m_ts_list(game_ts),
+m_ra2_list(game_ra2),
+m_db_array(6)
+{
     m_db_array.push_back(&m_td_list);
     m_db_array.push_back(&m_ra_list);
     m_db_array.push_back(&m_ts_list);

@@ -25,11 +25,11 @@ public:
     bool addName(t_game game, std::string name, std::string desc);
     bool deleteName(t_game game, std::string name);
 private:
-    MixGameDB m_td_list : game_td;
-    MixGameDB m_ra_list : game_ra;
-    MixGameDB m_ts_list : game_ts;
-    MixGameDB m_ra2_list : game_ra2;
-    std::vector<MixGameDB*> m_db_array(6);
+    MixGameDB m_td_list;
+    MixGameDB m_ra_list;
+    MixGameDB m_ts_list;
+    MixGameDB m_ra2_list;
+    std::vector<MixGameDB*> m_db_array;
 };
 
 #endif	/* MIX_DB_GMD_H */

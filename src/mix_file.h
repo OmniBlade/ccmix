@@ -7,6 +7,9 @@
 
 #ifndef MIX_FILE_H
 #define	MIX_FILE_H
+#include "mix_db_gmd.h"
+#include "mix_db_lmd.h"
+#include "mix_header.h"
 #include <string>
 #include <fstream>
 #include <vector>
@@ -18,90 +21,6 @@
 #else
 #include <stdint.h>
 #endif
-
-
-
-/**
- * @brief Mix archive header.
- * 
- * Mix archive starts with archive header storing information about number of files
- * included and their total size. Some archives (RA/TS) starts with 4b flags, which
- * is followed by header.
- * 
- * @par old mix format header
- *  - 2B - number of files
- *  - 4B - total content's size
- * 
- * @par RA/TS mix format header
- *  - 4B - flags
- *  - 2B - number of files
- *  - 4B - total content's size
- * 
- * @section archivetype determine what type archive is
- * Now here comes part which might be hard to understand. Data are stored in 
- * little endian format, which means little ending is stored first and big ending
- * last. Number 0x11223344, where little ending is 44, will be stored like this
- * 44 33 22 11 - bytes are stored in reverse direction as you can see.
- * 
- * Flags are stored only in LAST 2 bytes, that means if file starts with flags,
- * FIRST 2 bytes are 00 00, and other 2 bytes contains flag. If there are no flags,
- * archive can not start with 00 00, because that would mean it contains no files.
- * 
- * So we read header no matter what type archive is and check for first two bytes,which are stored in c_files. If c_files == 0, we take first 4 bytes, which are
- * stored in flags as flag information, move file pointer to 4th byte and repeat 
- * reading of header (6b). Now c_files contains number of files and size contains
- * size of all files.
- */
-union t_mix_header
-{
-	struct
-	{
-		uint16_t c_files;
-		uint32_t size;
-	};
-	uint32_t flags;
-};
-
-/**
- * @brief Included file header.
- * 
- * Right after mix file header comes file index. Every included file has it's entry
- * there storing information about it's CRC ID (mix archive doesn't store information
- * about file names, but CRC ID can be calculated from file name), offset in body
- * block and size. Remember that you have to add body offset to file offset before you read
- * a file data.
- * 
- * @par structure of index entry
- * - 4B - CRC id
- * - 4B - file offset
- * - 4B - file size
- * 
- * @par count body offset
- * To get body offset, you have to count size of information before body.
- * - does archive contain flags? (4B if so)
- * - mix archive header (6B) 
- * - file index (c_files * 12B)
- * - is archive encrypted? (80B if so)
- * 
- * 
- */
-struct t_mix_index_entry
-{
-    int32_t id;                // id, used to identify the file instead of a normal name
-    uint32_t offset;                     // offset from start of body
-    uint32_t size;                       // size of this internal file
-};
-
-//Now handled by mixid.h
-/* typedef enum 
-{ 
-    game_td,
-    game_ra,
-    game_ts
-} t_game; */
-
-const int32_t mix_checksum = 0x00010000;
-const int32_t mix_encrypted = 0x00020000;
 
 /**
  * @brief Mix Databases.
@@ -119,17 +38,7 @@ const int32_t mix_encrypted = 0x00020000;
  * 
  * 
  */
-struct t_id_data {
-    std::string name;
-    std::string description;
-};
 
-const char xcc_id[] = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x19\x80";
-
-const std::string lmd_name = "local mix database.dat"; 
-
-typedef std::map<int32_t, t_id_data> t_id_datamap;
-typedef std::pair<int32_t, t_id_data> t_id_datapair;
 
 /**
  * @brief mix file controller
@@ -141,7 +50,6 @@ class MixFile {
 public:
     MixFile(const std::string gmd = "global mix database.dat" , 
             t_game openGame = game_td);
-    //MixFile(const MixFile& orig);
     virtual ~MixFile();
     /**
      * @brief open mix archive
@@ -172,7 +80,7 @@ public:
      * @param withFileNames try to get file names of the content
      * @return true if extraction successful
      */
-    bool extractAll(std::string outPath = ".", bool withFileNames = true);
+    bool extractAll(std::string outPath = ".");
      /**
      * @brief Creates a new mix file
      * @param fileName name and path of mix to create
@@ -185,8 +93,7 @@ public:
      * @param key_src string of the path to a key_source to use in encryption
      * @return true if creation is successful
      */
-    bool createMix(std::string fileName, std::string in_dir, 
-                   t_game game = game_td, bool with_lmd = false, 
+    bool createMix(std::string fileName, std::string in_dir, bool with_lmd = false, 
                    bool encrypted = false, bool checksum = false, 
                    std::string key_src = "");
     /**
@@ -200,13 +107,13 @@ public:
      * @param fileName file name
      * @return true if successful
      */
-    bool addFile(std::string fileName);
+    bool addFile(std::string name);
     /**
      * @brief checks, if file is present in the archive
      * @param fname file name
      * @return true if present
      */
-    bool checkFileName(std::string fname);
+    bool checkFileName(std::string name);
     /**
      * @brief mix archive header
      * 
@@ -215,7 +122,7 @@ public:
      * @param flags print settings
      * @return file text list
      */
-    std::string printFileList(int flags);
+    std::string printFileList();
     /**
      * @brief mix archive header
      * 
@@ -224,20 +131,11 @@ public:
      */
     void printInfo();
     /**
-     * @brief count CRC ID from filename
-     * @param game t_game game selection
-     * @param name filename
-     * @return  CRC ID of file
-     */
-    static int32_t getID(t_game game, std::string name);
-    /**
      * @brief save file in decrypted format
      * @param outPath output filename
      * @return true if successful
      */
-    bool decrypt(std::string outPath);
-    std::vector<std::string> getFileNames();
-    std::vector<t_mix_index_entry> getFileIndex(){ return files; };
+    
     /**
      * @brief close mix file 
      * 
@@ -245,36 +143,20 @@ public:
      */
     void close();
 protected:
-    bool readIndex();
-    bool readEncryptedIndex();
-    bool readFileNames();
-    bool extractAllFast(std::string outPath = ".");
-    void readLocalMixDb(uint32_t offset, uint32_t size);
-    void readGlobalMixDb(std::string filePath);
-    bool writeHeader(std::fstream &fh, int16_t c_files, uint32_t flags = 0);
-    bool writeEncryptedHeader(std::fstream &fh, int16_t c_files, uint32_t flags = 0);
-    bool writeLmd(std::fstream &fh);
+    typedef std::map<uint32_t, uint32_t> t_skip_map;
+    typedef std::pair<uint32_t, uint32_t> t_skip_entry;
+    typedef std::map<uint32_t, uint32_t>::const_iterator t_skip_map_iter;
     bool writeCheckSum(std::fstream &fh);
-    uint32_t lmdSize();
     std::string baseName(std::string const& pathname);
-    static bool compareId(const t_mix_index_entry &a, const t_mix_index_entry &b);
-    static bool compareTdName(const std::string &a, const std::string &b);
-    static bool compareTsName(const std::string &a, const std::string &b);
-    t_mix_header mix_head; // mix file header
-    std::vector<t_mix_index_entry> files; // list of file headers
-    std::vector<std::string> filenames; // file names
-    bool m_is_encrypted;
-    bool m_has_checksum;
-    bool m_has_neoheader;
+    bool decrypt();
+    bool overWriteOld(std::string temp);
+    MixHeader m_header; // mix file header
+    MixGMD m_global_db;
+    MixLMD m_local_db;
+    t_skip_map m_skip;
     bool m_has_lmd;
-    int32_t dataoffset;
+    std::string m_file_path;
     std::fstream fh; // file handler
-    char key_source[80];
-    char key[56];
-    char decrypt_buffer[8]; // begining of next index read at the end of last block
-    int32_t decrypt_size; // size of valid buffer data
-    t_id_datamap name_map;
-    t_game mixGame;
     uint8_t m_checksum[20];
 };
 

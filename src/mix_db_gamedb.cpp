@@ -10,9 +10,9 @@ MixGameDB::MixGameDB(t_game game)
     m_size = 0;
 }
 
-void MixGameDB::readDB(const char* data)
+void MixGameDB::readDB(const char* data, uint32_t offset)
 {
-    m_entries = *reinterpret_cast<const uint32_t*>(data);
+    m_entries = *reinterpret_cast<const uint32_t*>(data + offset);
     m_size += 4;
     
     //get count of entries
@@ -36,12 +36,12 @@ void MixGameDB::readDB(const char* data)
         
         //attempt to insert data and figure out if we had a collision.
         rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type,
-                        id_data), id_data));
+                        id_data.name), id_data));
         if(rv.second) {
             m_size += id_data.name.length() + 1;
             m_size += id_data.description.length() + 1;
         } else {
-            cout << id_data << " generates an ID conflict with existing entry " << 
+            cout << id_data.name << " generates an ID conflict with existing entry " << 
                     rv.first->second.name;
         }
     }
@@ -50,7 +50,7 @@ void MixGameDB::readDB(const char* data)
 void MixGameDB::writeDB(std::fstream& fh)
 {
     //first record how many entries we have for this db.
-    fh.write(m_entries, sizeof(uint32_t));
+    fh.write(reinterpret_cast<char*>(m_entries), sizeof(uint32_t));
     
     //filenames
     for(t_id_iter it = m_name_map.begin(); it != m_name_map.end(); ++it) {
@@ -67,7 +67,7 @@ std::string MixGameDB::getName(int32_t id)
         return rv->second.name;
     }
     
-    return "<unknown>" << MixID::idStr(id);
+    return "<unknown>" + MixID::idStr(id);
 }
 
 bool MixGameDB::addName(std::string name, std::string description)
@@ -93,6 +93,6 @@ bool MixGameDB::addName(std::string name, std::string description)
 
 bool MixGameDB::deleteName(std::string name)
 {
-    cout << "deleteName not implemented yet" << endl;
+    cout << name << " deleteName not implemented yet" << endl;
     return false;
 }

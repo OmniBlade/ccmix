@@ -4,13 +4,15 @@
 
 using namespace std;
 
-const char MixLMD::m_xcc_id[] = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x19\x80";
+const char MixLMD::m_xcc_id[32] = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x19\x80";
 //const std::string MixLMD::m_lmd_name  = "local mix database.dat";
 
 MixLMD::MixLMD(t_game game)
 {
     m_game_type = game;
     m_size = 52;
+    addName("local mix database.dat");
+    m_id = MixID::idGen(m_game_type, "local mix database.dat");
 }
 
 void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
@@ -36,19 +38,24 @@ void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
     //local mix db doesn't have descriptions.
     string id_data;
     while (count--) {
+        //get the id for this filename
+        int32_t id = MixID::idGen(m_game_type, id_data);
+        
+        //check if its the LMD itself, if it is skip add logic
+        if(id == m_id) continue;
+        
         std::pair<t_id_iter,bool> rv;
         id_data = data;
         data += id_data.length() + 1;
-        rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type,
-                        id_data), id_data));
+        rv = m_name_map.insert(t_id_pair(id, id_data));
         if(rv.second) {
             m_size += id_data.length() + 1;
         } else {
             cout << id_data << " generates an ID conflict with existing entry " << 
-                    rv.first->second;
+                    rv.first->second << endl;
         }
     }
-    
+
     data = orig;
     delete[] data;
 }
@@ -77,7 +84,7 @@ std::string MixLMD::getName(int32_t id)
         return rv->second;
     }
     
-    return "<unknown>";
+    return "<unknown>" + MixID::idStr(id);
 }
 
 bool MixLMD::addName(std::string name)

@@ -8,6 +8,7 @@
 #ifndef MIX_DB_GAMEDB_H
 #define	MIX_DB_GAMEDB_H
 
+#include "mixid.h"
 #include <string>
 #include <fstream>
 #include <map>
@@ -21,7 +22,7 @@ public:
     void readDB(const char* data, uint32_t offset);
     void writeDB(std::fstream &fh);
     std::string getName(int32_t id);
-    bool addName(std::string name);
+    bool addName(std::string name, std::string description);
     bool deleteName(std::string name);
     t_game getGame() { return m_game_type; }
     uint32_t getSize() { return m_size; }
