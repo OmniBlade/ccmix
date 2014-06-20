@@ -25,8 +25,6 @@ void MixGMD::readDB(std::fstream &fh)
     size = end - begin;
     offset = 0;
     
-    std::cout << "Global DB size is " << size << std::endl;
-    
     //read file into data buffer
     char data[size];
 
@@ -37,8 +35,6 @@ void MixGMD::readDB(std::fstream &fh)
     for (uint32_t i = 0; i < m_db_array.size(); i++){
         m_db_array[i]->readDB(data, offset);
         offset += m_db_array[i]->getSize();
-        std::cout << "DB size: " << m_db_array[i]->getSize() << std::endl;
-        std::cout << "Next DB read starts from " << offset << std::endl;
     }
 }
 

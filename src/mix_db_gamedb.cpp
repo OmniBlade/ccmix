@@ -13,12 +13,10 @@ m_game_type(game)
 void MixGameDB::readDB(const char* data, uint32_t offset)
 {
     data += offset;
+    //get count of entries
     m_entries = *reinterpret_cast<const uint32_t*>(data);
     m_size += 4;
     data += 4;
-    
-    //get count of entries
-    cout << "Count for gameDB entries is " << m_entries << endl;
     
     //retrieve each entry into the struct as a string then push to the map.
     //relies on string constructor reading to 0;
@@ -38,16 +36,6 @@ void MixGameDB::readDB(const char* data, uint32_t offset)
         //attempt to insert data and figure out if we had a collision.
         rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type,
                         id_data.name), id_data));
-        //regardless of if its valid, must increment size
-        cout << "Name: " << id_data.name << " Desc: " << id_data.description 
-                <<" Entry: " << i + 1 << endl;
-        /*if(rv.second) {
-            m_size += id_data.name.length() + 1;
-            m_size += id_data.description.length() + 1;
-        } else {
-            //cout << id_data.name << " generates an ID conflict with existing entry " << 
-            //        rv.first->second.name;
-        }*/
     }
 }
 
