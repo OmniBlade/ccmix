@@ -481,7 +481,7 @@ int _tmain(int argc, TCHAR** argv)
                 return 1;
             }
             
-            cout << in_file.printFileList();
+            in_file.printFileList();
             return 0;
             break;
         }

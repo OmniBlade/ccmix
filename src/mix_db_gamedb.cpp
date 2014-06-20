@@ -4,46 +4,50 @@
 
 using namespace std;
 
-MixGameDB::MixGameDB(t_game game)
+MixGameDB::MixGameDB(t_game game) :
+m_size(0),
+m_game_type(game)
 {
-    m_game_type = game;
-    m_size = 0;
 }
 
 void MixGameDB::readDB(const char* data, uint32_t offset)
 {
-    m_entries = *reinterpret_cast<const uint32_t*>(data + offset);
+    data += offset;
+    m_entries = *reinterpret_cast<const uint32_t*>(data);
     m_size += 4;
+    data += 4;
     
     //get count of entries
     cout << "Count for gameDB entries is " << m_entries << endl;
     
-    cout << "Game for this DB read is " << m_game_type << endl;
-    
     //retrieve each entry into the struct as a string then push to the map.
     //relies on string constructor reading to 0;
     //local mix db doesn't have descriptions.
-    uint32_t count = m_entries;
+    //uint32_t count = m_entries;
     t_id_data id_data;
-    while (count--) {
+    for(uint32_t i = 0; i != m_entries; i++){
         std::pair<t_id_iter,bool> rv;
         
         //data is incremented and read twice, once for filename, once for desc.
         id_data.name = data;
         data += id_data.name.length() + 1;
+        m_size += id_data.name.length() + 1;
         id_data.description = data;
         data += id_data.description.length() + 1;
-        
+        m_size += id_data.description.length() + 1;
         //attempt to insert data and figure out if we had a collision.
         rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type,
                         id_data.name), id_data));
-        if(rv.second) {
+        //regardless of if its valid, must increment size
+        cout << "Name: " << id_data.name << " Desc: " << id_data.description 
+                <<" Entry: " << i + 1 << endl;
+        /*if(rv.second) {
             m_size += id_data.name.length() + 1;
             m_size += id_data.description.length() + 1;
         } else {
-            cout << id_data.name << " generates an ID conflict with existing entry " << 
-                    rv.first->second.name;
-        }
+            //cout << id_data.name << " generates an ID conflict with existing entry " << 
+            //        rv.first->second.name;
+        }*/
     }
 }
 

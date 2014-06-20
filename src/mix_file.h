@@ -122,7 +122,7 @@ public:
      * @param flags print settings
      * @return file text list
      */
-    std::string printFileList();
+    void printFileList();
     /**
      * @brief mix archive header
      * 

@@ -30,7 +30,7 @@ bool MixHeader::readHeader(std::fstream &fh)
     char flagbuff[6];
     fh.read(flagbuff, 6);
     
-    std::cout << MixID::idStr(flagbuff, 6) << " Retrieved from header." << std::endl;
+    //std::cout << MixID::idStr(flagbuff, 6) << " Retrieved from header." << std::endl;
     
     if(*reinterpret_cast<uint16_t*>(flagbuff)) {
         if(m_game_type){
@@ -44,11 +44,9 @@ bool MixHeader::readHeader(std::fstream &fh)
         
     } else {
         if(!m_game_type){
-            std::cout << "Error, game type is game_td but header is new format." << std::endl;
+            std::cout << "Error, game type is td but header is new format." << std::endl;
             return false;
         }
-        //header is now at least 10 bytes
-        m_header_size += 4;
         //lets work out what kind of header we have
         m_header_flags = *reinterpret_cast<int32_t*>(flagbuff);
         m_has_checksum = m_header_flags & mix_checksum;
@@ -144,7 +142,7 @@ bool MixHeader::readEncrypted(std::fstream& fh)
     for (uint16_t i = 0; i < m_file_count; i++) {
         memcpy(reinterpret_cast<char*>(&entry.first), pindbuf + i * 12,
                sizeof(int32_t));
-        memcpy(reinterpret_cast<char*>(&entry.second), pindbuf + i * 12,
+        memcpy(reinterpret_cast<char*>(&entry.second), pindbuf + 4 + i * 12,
                sizeof(t_index_info));
         rv = m_index.insert(entry);
         if(!rv.second) {

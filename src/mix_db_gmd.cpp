@@ -1,17 +1,15 @@
 #include "mix_db_gmd.h"
+#include <iostream>
 
 MixGMD::MixGMD() :
 m_td_list(game_td),
 m_ra_list(game_ra),
 m_ts_list(game_ts),
-m_ra2_list(game_ra2),
-m_db_array(6)
+m_ra2_list(game_ra2)
 {
     m_db_array.push_back(&m_td_list);
     m_db_array.push_back(&m_ra_list);
     m_db_array.push_back(&m_ts_list);
-    m_db_array.push_back(0);
-    m_db_array.push_back(0);
     m_db_array.push_back(&m_ra2_list);
 }
 
@@ -27,17 +25,20 @@ void MixGMD::readDB(std::fstream &fh)
     size = end - begin;
     offset = 0;
     
+    std::cout << "Global DB size is " << size << std::endl;
+    
     //read file into data buffer
-    char* data = new char[size];
+    char data[size];
 
     fh.seekg(0, std::ios::beg);
     fh.read(data, size);
     
     // read file from buffer into respective dbs
-    for (int i = 0; i < 6; i++){
-        if (!m_db_array[i]) continue;
+    for (uint32_t i = 0; i < m_db_array.size(); i++){
         m_db_array[i]->readDB(data, offset);
         offset += m_db_array[i]->getSize();
+        std::cout << "DB size: " << m_db_array[i]->getSize() << std::endl;
+        std::cout << "Next DB read starts from " << offset << std::endl;
     }
 }
 

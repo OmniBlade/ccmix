@@ -5,14 +5,13 @@
 using namespace std;
 
 const char MixLMD::m_xcc_id[32] = "XCC by Olaf van der Spek\x1a\x04\x17\x27\x10\x19\x80";
-//const std::string MixLMD::m_lmd_name  = "local mix database.dat";
 
 MixLMD::MixLMD(t_game game)
 {
     m_game_type = game;
     m_size = 52;
-    addName("local mix database.dat");
-    m_id = MixID::idGen(m_game_type, "local mix database.dat");
+    addName(getDBName());
+    m_id = MixID::idGen(m_game_type, getDBName());
 }
 
 void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
@@ -28,10 +27,7 @@ void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
     
     //get count of entries
     int32_t count = *reinterpret_cast<const int32_t*>(data);
-    cout << "Count for lmd entries is " << count << endl;
     data += 4;
-    
-    cout << "Game for LMD read is " << m_game_type << endl;
     
     //retrieve each entry into the struct as a string then push to the map.
     //relies on string constructor reading to 0;
@@ -39,13 +35,14 @@ void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
     string id_data;
     while (count--) {
         //get the id for this filename
+        id_data = data;
         int32_t id = MixID::idGen(m_game_type, id_data);
-        
         //check if its the LMD itself, if it is skip add logic
-        if(id == m_id) continue;
+        if(id == m_id) {
+            continue;
+        }
         
         std::pair<t_id_iter,bool> rv;
-        id_data = data;
         data += id_data.length() + 1;
         rv = m_name_map.insert(t_id_pair(id, id_data));
         if(rv.second) {

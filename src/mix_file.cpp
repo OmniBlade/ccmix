@@ -47,9 +47,13 @@ m_global_db(),
 m_local_db(game)
 {
     fstream gmdfile;
-    gmdfile.open(gmd.c_str(), std::ios::binary);
-    m_global_db.readDB(gmdfile);
-    gmdfile.close();
+    gmdfile.open(gmd.c_str(), fstream::in | fstream::binary);
+    if(gmdfile.is_open()){
+        m_global_db.readDB(gmdfile);
+        gmdfile.close();
+    } else {
+        cout << "Could not open global mix database.dat" << endl;
+    }
 }
 
 MixFile::~MixFile()
@@ -82,7 +86,6 @@ bool MixFile::open(const string path)
     
     //check if we have a local mix db
     lmd = m_header.getEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()));
-    cout << "LMD Stats are Offset: " << lmd.offset << " Size: " << lmd.size << endl;
     if(lmd.size){
         m_local_db.readDB(fh, lmd.offset + m_header.getHeaderSize(), lmd.size);
     }
@@ -364,7 +367,7 @@ bool MixFile::addCheckSum()
     //check if we think this file is checksummed already
     if(m_header.getHasChecksum()){
         cout << "File is already flagged as having a checksum" << endl;
-        return true;
+        return false;
     }
     
     //toggle flag for checksum and then write it
@@ -416,9 +419,22 @@ bool MixFile::writeCheckSum(fstream &fh)
     return false;
 }
     
-string MixFile::printFileList() 
+void MixFile::printFileList() 
 {
-    return "Not Implemented.";
+    string fname;
+    t_mix_index_iter it = m_header.getBegin();
+    while(it != m_header.getEnd()){
+        //try to get a filename, if lmd doesn't have it try gmd.
+        fname = m_local_db.getName(it->first);
+        if(fname.substr(0, 9) == "<unknown>") {
+            fname = m_global_db.getName(m_header.getGame(), it->first);
+        }
+        
+        cout << setw(24) << fname << setw(10) << MixID::idStr(it->first) <<
+                setw(12) << it->second.offset << setw(12) << 
+                it->second.size << endl;
+        it++;
+    }
 }
 
 void MixFile::printInfo()
@@ -436,17 +452,17 @@ void MixFile::printInfo()
     }
     cout << "It contains " << m_header.getFileCount() << " files"
             " which take up " << m_header.getBodySize() << " bytes\n" << endl;
-    /*if(m_header.getIsEncrypted()){
+    if(m_header.getIsEncrypted()){
         cout << "The mix has an encrypted header.\n\nThe blowfish key is " <<
-                SHA1::hexPrinter(reinterpret_cast<uint8_t*>(m_header.getKey()), 56) << "\n" << endl;
+                MixID::idStr(m_header.getKey(), 56) << "\n" << endl;
         cout << "The key was recovered from the following key source:\n" <<
-                SHA1::hexPrinter(reinterpret_cast<uint8_t*>(m_header.getKeySource()), 80) << "\n" <<
+                MixID::idStr(m_header.getKeySource(), 80) << "\n" <<
                 endl;
     }
     if(m_header.getHasChecksum()){
         cout << "The mix has a SHA1 checksum:\nSHA1: " << 
-                SHA1::hexPrinter(m_checksum, 20) << "\n" << endl;
-    }*/
+                MixID::idStr(reinterpret_cast<char*>(m_checksum), 20) << "\n" << endl;
+    }
 }
 
 bool MixFile::decrypt()
