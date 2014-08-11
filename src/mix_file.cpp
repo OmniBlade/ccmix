@@ -11,8 +11,7 @@
 //#include "mixid.h"
 #include <iomanip>
 #include <algorithm>
-#include <cctype>
-#include <sstream>
+//#include <cctype>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -267,8 +266,8 @@ bool MixFile::addFile(string name)
 {
     struct stat st;
     //use mix_head.size uint32_t offset = 0;
-    fstream ifile;
-    fstream ofile;
+    fstream ifh;
+    fstream ofh;
     t_index_info lmd;
     std::vector<std::string> filenames; // file names
     //int location;
@@ -308,55 +307,135 @@ bool MixFile::addFile(string name)
     }
     
     //open a temp file
-    ofile.open("~ccmix.tmp", ios::binary|ios::out);
-    if(!ofile.is_open()){
+    ofh.open("~ccmix.tmp", ios::binary|ios::out);
+    if(!ofh.is_open()){
         cout << "Couldn't open a temporary file to buffer the changes" << endl;
         return false;
     }
     
     //write our new header
-    m_header.writeHeader(ofile);
+    m_header.writeHeader(ofh);
     
     //copy the body of the old mix, skipping the old lmd
     fh.seekg(old_offset, ios::beg);
     while(fh.tellg() != lmd.offset + old_offset){
-        ofile.put(fh.get());
+        ofh.put(fh.get());
     }
     //location =;
     fh.seekg(lmd.size + fh.tellg());
     while(!fh.eof()){
-        ofile.put(fh.get());
+        ofh.put(fh.get());
     }
     
     //seek back length of checksum if we had one
-    if(m_header.getHasChecksum()) ofile.seekp(-20, ios::end);
+    if(m_header.getHasChecksum()) ofh.seekp(-20, ios::end);
     
     //open the file to add, if we can't open, bail and delete temp file
-    ifile.open(name.c_str(), ios::binary|ios::in);
-    if(!ifile.is_open()){
+    ifh.open(name.c_str(), ios::binary|ios::in);
+    if(!ifh.is_open()){
         cout << "Failed to open file to add" << endl;
         remove("~ccmix.tmp");
         return false;
     }
     
     //add new file to mix body
-    while(!ifile.eof()){
-        ofile.put(ifile.get());
+    while(!ifh.eof()){
+        ofh.put(ifh.get());
     }
     
-    ifile.close();
+    ifh.close();
     
     //write lmd if needed
     if(lmd.size){
-        m_local_db.writeDB(ofile);
+        m_local_db.writeDB(ofh);
     }
     
-    //write checksum to end of file if required.
+    //write checksum to end of file if required. will have to overwrite old one
     if(m_header.getHasChecksum()){
-        writeCheckSum(ofile);
+        writeCheckSum(ofh, -20);
     }
     
     //TODO add logic to move new file over the old file
+    overWriteOld("~ccmix.tmp");
+    
+    return true;
+}
+
+bool MixFile::removeFile(std::string name)
+{
+    return removeFile(MixID::idGen(m_header.getGame(), baseName(name)));
+}
+
+bool MixFile::removeFile(int32_t id)
+{
+    t_index_info lmd;
+    t_index_info rem;
+    fstream ofh;
+    
+    //empty the skip map
+    m_skip.clear();
+    
+    //save the old data offset from header before we started changing it.
+    uint32_t old_offset = m_header.getHeaderSize();
+    
+    //set up to skip copying the lmd if the mix contains one
+    lmd = m_header.getEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()));
+    rem = m_header.getEntry(id);
+    
+    if(!rem.size) return false;
+            
+    //add skip entry for lmd if we have one and remove from header
+    if(lmd.size) {
+        m_skip[lmd.offset] = lmd.size;
+        m_header.removeEntry(MixID::idGen(m_header.getGame(), 
+                             m_local_db.getDBName()), true);
+    }
+    
+    //add our file to the skip map and remove it
+    m_skip[rem.offset] = rem.size;
+    m_header.removeEntry(id, true);
+    m_local_db.deleteName(id);
+    
+    //re-add our lmd entry if we had one will recalc its position
+    if(lmd.size) {
+        m_header.addEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()),
+                          m_local_db.getSize());
+    }
+    
+    //open a temp file
+    ofh.open("~ccmix.tmp", ios::binary|ios::out);
+    if(!ofh.is_open()){
+        cout << "Couldn't open a temporary file to buffer the changes" << endl;
+        return false;
+    }
+    
+    //write our new header
+    m_header.writeHeader(ofh);
+    
+    //copy the body of the old mix, skipping files in m_skip
+    fh.seekg(old_offset, ios::beg);
+    
+    for(t_skip_map_iter it = m_skip.begin(); it != m_skip.end(); it++) {
+        while(fh.tellg() != it->first + old_offset){
+            ofh.put(fh.get());
+        }
+        fh.seekp(old_offset + it->first + it->second);
+    }
+    
+    while(!fh.eof()){
+        ofh.put(fh.get());
+    }
+    
+    //write lmd if needed
+    if(lmd.size){
+        m_local_db.writeDB(ofh);
+    }
+    
+    //write checksum to end of file if required. will have to overwrite old one
+    if(m_header.getHasChecksum()){
+        writeCheckSum(ofh, -20);
+    }
+    
     overWriteOld("~ccmix.tmp");
     
     return true;
@@ -381,7 +460,7 @@ bool MixFile::addCheckSum()
     return true;
 }
 
-bool MixFile::writeCheckSum(fstream &fh) 
+bool MixFile::writeCheckSum(fstream &fh, int32_t pos) 
 {
     SHA1 sha1;
     const size_t BufferSize = 144*7*1024; 
@@ -409,8 +488,8 @@ bool MixFile::writeCheckSum(fstream &fh)
     << MixID::idStr(reinterpret_cast<char*>(hash), 20);
     cout << endl;
     
-    //write checksum
-    fh.seekp(0, ios::end);
+    //write checksum, pos is position from end to start at.
+    fh.seekp(pos, ios::end);
     fh.write(reinterpret_cast<const char*>(hash), 20);
     
     delete[] buffer;
@@ -476,7 +555,7 @@ bool MixFile::decrypt()
     uint32_t dataoffset = m_header.getHeaderSize();
     m_header.clearIsEncrypted();
     
-    ofh.open("~ccmix.tmp", ios::binary);
+    ofh.open("~ccmix.tmp", fstream::out | fstream::binary | fstream::trunc);
     m_header.writeHeader(ofh);
     
     fh.seekg(dataoffset);
@@ -485,10 +564,37 @@ bool MixFile::decrypt()
         ofh.put(fh.get());
     }
     
+    ofh.close();
+    
     overWriteOld("~ccmix.tmp");
+
+    return true;
+}
+
+bool MixFile::encrypt()
+{
+    fstream ofh;
+    
+    //are we already encrypted?
+    if (m_header.getIsEncrypted()) return false;
+    
+    //get some info on original file and then set header to decrypted
+    uint32_t dataoffset = m_header.getHeaderSize();
+    m_header.setIsEncrypted();
+    
+    ofh.open("~ccmix.tmp", fstream::out | fstream::binary | fstream::trunc);
+    m_header.writeHeader(ofh);
+    
+    fh.seekg(dataoffset);
+    
+    while(!fh.eof()){
+        ofh.put(fh.get());
+    }
     
     ofh.close();
-
+    
+    overWriteOld("~ccmix.tmp");
+    
     return true;
 }
 

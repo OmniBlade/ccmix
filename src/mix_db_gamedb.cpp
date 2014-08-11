@@ -20,8 +20,6 @@ void MixGameDB::readDB(const char* data, uint32_t offset)
     
     //retrieve each entry into the struct as a string then push to the map.
     //relies on string constructor reading to 0;
-    //local mix db doesn't have descriptions.
-    //uint32_t count = m_entries;
     t_id_data id_data;
     for(uint32_t i = 0; i != m_entries; i++){
         std::pair<t_id_iter,bool> rv;
