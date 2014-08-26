@@ -108,9 +108,17 @@ bool MixFile::checkFileName(string name)
 bool MixFile::extractAll(string outPath) 
 {
     fstream ofile;
+    string fname;
+            
     for(t_mix_index_iter it = m_header.getBegin(); it != m_header.getEnd(); it++) {
-        extractFile(it->first, 
-                    outPath + DIR_SEPARATOR + m_local_db.getName(it->first));
+        
+        fname = m_local_db.getName(it->first);
+        
+        if(fname.substr(0, 4) == "[id]") {
+            fname = m_global_db.getName(m_header.getGame(), it->first);
+        }
+        
+        extractFile(it->first, outPath + DIR_SEPARATOR + fname);
     }
     return true;
 }
@@ -293,8 +301,11 @@ bool MixFile::addFile(string name)
     //get filename without path info
     string basename = baseName(name);
     
+    cout << "Trying to add " << basename << endl;
+    
     //save the old data offset from header before we started changing it.
     uint32_t old_offset = m_header.getHeaderSize();
+    uint32_t old_size = old_offset + m_header.getBodySize();
     //uint32_t old_end = old_offset + m_header.getBodySize();
     
     //set up to skip copying the lmd if the mix contains one
@@ -320,12 +331,13 @@ bool MixFile::addFile(string name)
     
     //if the lmd had a size before (thus existed), add it back to header now
     if(lmd.size) {
+        cout << "We think we need to re-add an lmd" << endl;
         m_header.addEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()),
                           m_local_db.getSize());
     }
     
     //open a temp file
-    ofh.open("~ccmix.tmp", ios::binary|ios::out);
+    ofh.open("ccmix.mix", ios::binary|ios::out);
     if(!ofh.is_open()){
         cout << "Couldn't open a temporary file to buffer the changes" << endl;
         return false;
@@ -334,19 +346,22 @@ bool MixFile::addFile(string name)
     //write our new header
     m_header.writeHeader(ofh);
     
+    cout << "We think we have an lmd offset of " << lmd.offset << endl;
+    
     //copy the body of the old mix, skipping the old lmd
     fh.seekg(old_offset, ios::beg);
-    while(fh.tellg() != lmd.offset + old_offset){
-        ofh.put(fh.get());
-    }
-    //location =;
-    fh.seekg(lmd.size + fh.tellg());
-    while(!fh.eof()){
+    cout << "lmd offset and old offset = " << lmd.offset + old_offset << endl;
+    while(fh.tellg() < lmd.offset + old_offset){
         ofh.put(fh.get());
     }
     
-    //seek back length of checksum if we had one
-    if(m_header.getHasChecksum()) ofh.seekp(-20, ios::end);
+    if(lmd.size) fh.seekg(lmd.size + fh.tellg());
+    
+    cout << "after lmd seek get pos is " << fh.tellg() << endl;
+    
+    while(fh.tellg() < old_size){
+        ofh.put(fh.get());
+    }
     
     //open the file to add, if we can't open, bail and delete temp file
     ifh.open(name.c_str(), ios::binary|ios::in);
@@ -357,7 +372,7 @@ bool MixFile::addFile(string name)
     }
     
     //add new file to mix body
-    while(!ifh.eof()){
+    while(ifh.tellg() < st.st_size){
         ofh.put(ifh.get());
     }
     
@@ -368,13 +383,13 @@ bool MixFile::addFile(string name)
         m_local_db.writeDB(ofh);
     }
     
-    //write checksum to end of file if required. will have to overwrite old one
+    //write checksum to end of file if required.
     if(m_header.getHasChecksum()){
-        writeCheckSum(ofh, -20);
+        writeCheckSum(ofh, 0);
     }
     
     //TODO add logic to move new file over the old file
-    overWriteOld("~ccmix.tmp");
+    //overWriteOld("~ccmix.tmp");
     
     return true;
 }
@@ -395,6 +410,7 @@ bool MixFile::removeFile(int32_t id)
     
     //save the old data offset from header before we started changing it.
     uint32_t old_offset = m_header.getHeaderSize();
+    uint32_t old_size = old_offset + m_header.getBodySize();
     
     //set up to skip copying the lmd if the mix contains one
     lmd = m_header.getEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()));
@@ -440,7 +456,7 @@ bool MixFile::removeFile(int32_t id)
         fh.seekp(old_offset + it->first + it->second);
     }
     
-    while(!fh.eof()){
+    while(fh.tellg() < old_size){
         ofh.put(fh.get());
     }
     
@@ -523,7 +539,7 @@ void MixFile::printFileList()
     while(it != m_header.getEnd()){
         //try to get a filename, if lmd doesn't have it try gmd.
         fname = m_local_db.getName(it->first);
-        if(fname.substr(0, 9) == "<unknown>") {
+        if(fname.substr(0, 4) == "[id]") {
             fname = m_global_db.getName(m_header.getGame(), it->first);
         }
         

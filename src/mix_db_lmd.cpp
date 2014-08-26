@@ -30,7 +30,7 @@ void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
     data += 4;
     
     //retrieve each entry into the struct as a string then push to the map.
-    //relies on string constructor reading to 0;
+    //relies on string constructor reading to \0;
     //local mix db doesn't have descriptions.
     string id_data;
     while (count--) {
@@ -39,6 +39,7 @@ void MixLMD::readDB(std::fstream &fh, uint32_t offset, uint32_t size)
         int32_t id = MixID::idGen(m_game_type, id_data);
         //check if its the LMD itself, if it is skip add logic
         if(id == m_id) {
+            data += getDBName().length() + 1;
             continue;
         }
         
@@ -87,8 +88,7 @@ std::string MixLMD::getName(int32_t id)
 bool MixLMD::addName(std::string name)
 {
     std::pair<t_id_iter,bool> rv;
-    rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type,
-                    name), name));
+    rv = m_name_map.insert(t_id_pair(MixID::idGen(m_game_type, name), name));
     if(rv.second) {
         m_size += name.length() + 1;
         return true;

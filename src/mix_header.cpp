@@ -282,6 +282,8 @@ bool MixHeader::removeEntry(int32_t id, bool adjust = false)
     }
     
     m_body_size -= old->second.size;
+    m_header_size -= 12;
+    m_file_count -= 1;
     m_index.erase(old);
     return true;
 }

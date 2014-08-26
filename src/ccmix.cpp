@@ -46,7 +46,7 @@ enum { OPT_HELP, OPT_EXTRACT, OPT_CREATE, OPT_GAME, OPT_FILES, OPT_DIR,
        OPT_REM};
 typedef enum { NONE, EXTRACT, CREATE, ADD, REMOVE, LIST, INFO} t_mixmode;
 
-const string games[] = {"td", "ra", "ts"};
+const string games[] = {"td", "ra", "ts", "ra2"};
 
 //get program directory from argv[0]
 static const string getProgramDir(const char* const program_location) 
@@ -119,7 +119,7 @@ void ShowHelp(TCHAR** argv)
     cout << "/n***ccmix program usage***\n" << endl;
     cout << "Usage: " << argv[0] << 
             " [--mode] (--file FILE) (--directory DIR) (--game "
-            "[td|ra|ts]) [--mix MIXFILE]\n" << endl;
+            "[td|ra|ts|ra2]) [--mix MIXFILE]\n" << endl;
     cout << "Modes:\n" << endl;
     cout << "--extract\n"
             "Extracts the contents of the specified mix file to the current "
@@ -369,8 +369,10 @@ int _tmain(int argc, TCHAR** argv)
                     game = game_ra;
                 } else if(gt == games[2]){
                     game = game_ts;
+                } else if(gt == games[3]){
+                    game = game_ra2;
                 } else {
-                    _tprintf(_T("--game is either td, ra or ts.\n"));
+                    _tprintf(_T("--game is either td, ra, ts or ra2.\n"));
                 }
                     
                 break;
@@ -476,6 +478,8 @@ int _tmain(int argc, TCHAR** argv)
                 if(checksum){
                     in_file.addCheckSum();
                 }
+            } else {
+                in_file.addFile(file);
             }
             
             return 0;
