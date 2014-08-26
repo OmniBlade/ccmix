@@ -337,7 +337,7 @@ bool MixFile::addFile(string name)
     }
     
     //open a temp file
-    ofh.open("ccmix.mix", ios::binary|ios::out);
+    ofh.open("~ccmix.tmp", ios::binary|ios::out);
     if(!ofh.is_open()){
         cout << "Couldn't open a temporary file to buffer the changes" << endl;
         return false;
@@ -389,7 +389,7 @@ bool MixFile::addFile(string name)
     }
     
     //TODO add logic to move new file over the old file
-    //overWriteOld("~ccmix.tmp");
+    overWriteOld("~ccmix.tmp");
     
     return true;
 }
@@ -627,7 +627,7 @@ bool MixFile::encrypt()
     
     ofh.close();
     
-    overWriteOld("~ccmix.tmp");
+    //overWriteOld("~ccmix.tmp");
     
     return true;
 }
@@ -635,19 +635,11 @@ bool MixFile::encrypt()
 bool MixFile::overWriteOld(std::string temp)
 {
     fstream ifh;
+    string newname = m_file_path;
     
-    ifh.open(temp.c_str(), fstream::in | fstream::binary);
-    if(!ifh.is_open()) return false;
+    remove(m_file_path.c_str());
+    rename(temp.c_str(), m_file_path.c_str());
     
-    if(fh.is_open()) close();
-        
-    fh.open(m_file_path.c_str(), fstream::in | fstream::out |
-                                 fstream::binary | fstream::trunc);
-    if(!fh.is_open()) return false;
-    
-    while(!ifh.eof()){
-        fh.put(ifh.get());
-    }
     return true;
 }
 
