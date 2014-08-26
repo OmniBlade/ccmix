@@ -49,23 +49,25 @@ typedef enum { NONE, EXTRACT, CREATE, ADD, REMOVE, LIST, INFO} t_mixmode;
 const string games[] = {"td", "ra", "ts"};
 
 //get program directory from argv[0]
-static const string getProgramDir(const char* const program_location) {
-    register int i;
+static const string getProgramDir(const char* const program_location) 
+{
+    int i;
     const char* const loc = program_location;
 
     size_t size = strlen(loc);
+    
+    for (i = (size - 1); (i >= 0) && (loc[i] != DIR_SEPARATOR); --i) {
 
-    for (i = (size - 1); (i >= 0) && (loc[i] != DIR_SEPARATOR); --i);
-
-    if (loc[i] == DIR_SEPARATOR) {
-        char* curdir = (char*) malloc((i + 1) * sizeof (char));
-        if (curdir != NULL) {
-            strncpy(curdir, loc, (size_t) i);
-            curdir[i] = '\0';
-            return string(curdir);
+        if (loc[i] == DIR_SEPARATOR) {
+            char* curdir = (char*) malloc((i + 1) * sizeof (char));
+            if (curdir != NULL) {
+                strncpy(curdir, loc, (size_t) i);
+                curdir[i] = '\0';
+                return string(curdir);
+            }
         }
     }
-
+    
     const char* curdir = ".";
     return string(curdir);
 }
@@ -178,6 +180,8 @@ bool Extraction(MixFile& in_file, string filename, string outdir, uint32_t id)
         if (!in_file.extractAll(outdir)) {
             cout << "Extraction failed" << endl;
             return false;
+        } else {
+            return true;
         }
     } else if (filename != "" && id == 0) {
         if (!in_file.extractFile(filename, destination)) {
@@ -401,6 +405,12 @@ int _tmain(int argc, TCHAR** argv)
                 mode = ADD;
                 break;
             }
+            case OPT_REM:
+            {
+                if (mode != NONE) { NoMultiMode(argv); return 1; }
+                mode = REMOVE;
+                break;
+            }
             default:
             {
                 if (args.OptionArg()) {
@@ -423,7 +433,7 @@ int _tmain(int argc, TCHAR** argv)
     
     switch(mode) {
         case EXTRACT:
-        {
+        {   
             MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
                             user_home_dir), game);
 

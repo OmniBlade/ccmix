@@ -80,7 +80,7 @@ bool MixFile::open(const string path)
         cout << "File " << path << " failed to open" << endl;
         return false;
     }
-
+    
     if(!m_header.readHeader(fh)) {
         return false;
     }

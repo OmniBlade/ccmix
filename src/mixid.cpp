@@ -135,6 +135,6 @@ namespace MixID
     
     bool isIdName(std::string fname)
     {
-        return strncmp(fname.c_str(), marker, strlen(marker));
+        return !strncmp(fname.c_str(), marker, strlen(marker));
     }
 }
