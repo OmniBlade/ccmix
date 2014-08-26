@@ -22,6 +22,7 @@ public:
     std::string getName(int32_t id);
     bool addName(std::string name);
     bool deleteName(std::string name);
+    bool deleteName(int32_t id);
     t_game getGame() { return m_game_type; }
     uint32_t getSize() { return m_size; }
     std::string getDBName() { return "local mix database.dat"; }

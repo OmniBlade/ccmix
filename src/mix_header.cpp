@@ -96,11 +96,7 @@ bool MixHeader::readEncrypted(std::fstream& fh)
     std::pair<t_mix_index_iter,bool> rv;
     
     Cblowfish blfish;
-    //std::vector<char> block_buff(8);
-    //std::vector<char> index_buffer(8);
     int block_count;
-    //char* pindbuf = &index_buffer[0];
-    //char* pblkbuf = &block_buff[0];
     char pblkbuf[8];
     
     //header is at least 84 bytes long at this point due to key source

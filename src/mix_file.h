@@ -103,14 +103,26 @@ public:
      */
     bool addCheckSum();
     /**
-     * @brief checks, if file is present in the archive
-     * @param fileName file name
+     * @brief checks, if file is present in the archive and adds if not
+     * @param name file name
      * @return true if successful
      */
     bool addFile(std::string name);
+     /**
+     * @brief checks, if file is present in the archive and removes if so
+     * @param name file name
+     * @return true if successful
+     */
+    bool removeFile(std::string name);
+     /**
+     * @brief checks, if file is present in the archive and removes if so
+     * @param name file name
+     * @return true if successful
+     */
+    bool removeFile(int32_t id);
     /**
      * @brief checks, if file is present in the archive
-     * @param fname file name
+     * @param id id of filename
      * @return true if present
      */
     bool checkFileName(std::string name);
@@ -146,9 +158,10 @@ protected:
     typedef std::map<uint32_t, uint32_t> t_skip_map;
     typedef std::pair<uint32_t, uint32_t> t_skip_entry;
     typedef std::map<uint32_t, uint32_t>::const_iterator t_skip_map_iter;
-    bool writeCheckSum(std::fstream &fh);
+    bool writeCheckSum(std::fstream &fh, int32_t pos = 0);
     std::string baseName(std::string const& pathname);
     bool decrypt();
+    bool encrypt();
     bool overWriteOld(std::string temp);
     MixHeader m_header; // mix file header
     MixGMD m_global_db;

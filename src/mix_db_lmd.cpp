@@ -99,3 +99,21 @@ bool MixLMD::addName(std::string name)
     }
     return false;
 }
+
+bool MixLMD::deleteName(std::string name)
+{
+    return deleteName(MixID::idGen(m_game_type, name));
+}
+
+bool MixLMD::deleteName(int32_t id)
+{
+    t_id_iter rv = m_name_map.find(id);
+    if(rv == m_name_map.end()){
+        std::cout << "Name not found in local DB." << std::endl;
+        return false;
+    }
+    
+    m_size -= rv->second.size() + 1;
+    m_name_map.erase(id);
+    return true;
+}
