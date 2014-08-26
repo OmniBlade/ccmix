@@ -6,6 +6,7 @@
  */
 
 #include "mixid.h"
+#include <cstring>
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
@@ -48,6 +49,8 @@ namespace MixID
             0xbdbdf21c, 0xcabac28a, 0x53b39330, 0x24b4a3a6, 0xbad03605, 0xcdd70693, 0x54de5729, 0x23d967bf,
             0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d};
         
+        const char* marker = "[id]";
+        
         uint32_t do_block(const void* data, int size);
         
         uint32_t do_block(const void* data, int size)
@@ -64,6 +67,10 @@ namespace MixID
 
     int32_t idGen(t_game game, std::string fname) 
     {
+        //if the filename starts [id] treat next 8 chars as an id to convert to int
+        if(isIdName(fname)){
+            return strId(fname.substr(4, 8));
+        }
         std::transform(fname.begin(), fname.end(), fname.begin(),
                 (int(*)(int)) toupper); // convert to uppercase
         if (game <= game_ra) { // for TD and RA
@@ -124,5 +131,10 @@ namespace MixID
         ss << std::hex << hex;
         ss >> rv;
         return rv;
+    }
+    
+    bool isIdName(std::string fname)
+    {
+        return strncmp(fname.c_str(), marker, strlen(marker));
     }
 }

@@ -32,7 +32,8 @@ namespace MixID
     std::string idStr(int32_t id);
     std::string idStr(char* id, uint32_t size);
     int32_t strId(std::string hex);
+    bool isIdName(std::string fname);
 }
 
-#endif	/* CCRC_H */
+#endif	/* MIXID_H */
 

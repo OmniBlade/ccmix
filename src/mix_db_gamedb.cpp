@@ -59,7 +59,7 @@ std::string MixGameDB::getName(int32_t id)
         return rv->second.name;
     }
     
-    return "<unknown>" + MixID::idStr(id);
+    return "[id]" + MixID::idStr(id);
 }
 
 bool MixGameDB::addName(std::string name, std::string description)

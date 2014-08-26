@@ -81,7 +81,7 @@ std::string MixLMD::getName(int32_t id)
         return rv->second;
     }
     
-    return "<unknown>" + MixID::idStr(id);
+    return "[id]" + MixID::idStr(id);
 }
 
 bool MixLMD::addName(std::string name)

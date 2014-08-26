@@ -13,13 +13,19 @@
 #include <algorithm>
 #include <cctype>
 #include <sstream>
+
+#ifdef _MSC_VER
+#include "win32/dirent.h"
+#else
 #include <dirent.h>
+#endif
+
 #include <sys/stat.h>
 #include <sys/types.h>
 
 using namespace std;
 
-#ifdef WINDOWS
+#ifdef _WIN32
 
 #define DIR_SEPARATOR '\\'
 
@@ -173,16 +179,28 @@ bool MixFile::createMix(string fileName, string in_dir,
     while ((dirp = readdir(dp)) != NULL) {
         stat((in_dir + DIR_SEPARATOR + dirp->d_name).c_str(), &st);
         if(!S_ISDIR(st.st_mode)){
-            if(!m_local_db.addName(string(dirp->d_name))) {
-                cout << "Skipping " << dirp->d_name << ", ID Collision" << endl;
+            
+            //check if we have an ID containing file name, if not add to localdb
+            if(!MixID::isIdName(string(dirp->d_name))){
+                if(!m_local_db.addName(string(dirp->d_name))) {
+                    cout << "Skipping " << dirp->d_name << ", ID Collision" << endl;
+                    continue;
+                }
+            }
+            
+            //try adding entry to header, skip if failed
+            stat((in_dir + DIR_SEPARATOR + dirp->d_name).c_str(), &st);
+            
+            if(!m_header.addEntry(MixID::idGen(m_header.getGame(), 
+                                  string(dirp->d_name)), 
+                                  st.st_size)) {
                 continue;
             }
             
+            //finally add the filename to the list of files we will add
             filenames.push_back(string(dirp->d_name));
-            stat((in_dir + DIR_SEPARATOR + dirp->d_name).c_str(), &st);
-            m_header.addEntry(MixID::idGen(m_header.getGame(), string(dirp->d_name)), 
-                              st.st_size);
         }
+        
     }
     closedir(dp);
     
