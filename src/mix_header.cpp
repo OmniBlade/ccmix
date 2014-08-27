@@ -103,7 +103,7 @@ bool MixHeader::readEncrypted(std::fstream& fh)
     m_header_size = 84;
     
     //read keysource to obtain blowfish key
-    fh.seekg(4, std::ios::beg);
+    //fh.seekg(4, std::ios::beg);
     readKeySource(fh);
     blfish.set_key(reinterpret_cast<uint8_t*>(m_key), 56);
     
@@ -152,6 +152,18 @@ bool MixHeader::readEncrypted(std::fstream& fh)
 
 bool MixHeader::readKeySource(std::fstream& fh)
 {
+    if(!fh.is_open()) return false;
+    
+    fh.seekg(0, std::ios::beg);
+    //read first 4 bytes, determine if we have keysource mix or not.
+    char flagbuff[4];
+    fh.read(flagbuff, 4);
+    
+    if(!*reinterpret_cast<int32_t*>(flagbuff) & mix_encrypted) {
+        std::cout << "key_source not suitable." << std::endl;
+        return false;
+    }
+    
     fh.read(m_keysource, 80);
     get_blowfish_key(reinterpret_cast<uint8_t*>(m_keysource),
                      reinterpret_cast<uint8_t*>(m_key));

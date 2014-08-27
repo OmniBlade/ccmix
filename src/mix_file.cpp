@@ -109,6 +109,7 @@ bool MixFile::extractAll(string outPath)
 {
     fstream ofile;
     string fname;
+    bool rv;
             
     for(t_mix_index_iter it = m_header.getBegin(); it != m_header.getEnd(); it++) {
         
@@ -118,7 +119,9 @@ bool MixFile::extractAll(string outPath)
             fname = m_global_db.getName(m_header.getGame(), it->first);
         }
         
-        extractFile(it->first, outPath + DIR_SEPARATOR + fname);
+        rv = extractFile(it->first, outPath + DIR_SEPARATOR + fname);
+        
+        if(!rv) return rv;
     }
     return true;
 }
@@ -173,7 +176,7 @@ bool MixFile::createMix(string fileName, string in_dir,
     
     cout << "Game we are building for is " << m_header.getGame() << endl;
     if(m_header.getIsEncrypted()){
-        cout << "We are going to try to encrypt" << endl;
+        cout << "We want header encryption." << endl;
     }
     
     //make sure we can open the directory
@@ -224,9 +227,8 @@ bool MixFile::createMix(string fileName, string in_dir,
     //if we are encrypted, get a key source
     if(m_header.getIsEncrypted()){
         ifile.open(key_src.c_str(), ios::binary|ios::in);
-        if(ifile.is_open()){
-            m_header.readKeySource(ifile);
-        } else {
+        //readKeySource checks if file is actually open
+        if(!m_header.readKeySource(ifile)){
             cout << "Could not open a key_source, encryption disabled" << endl;
             m_header.clearIsEncrypted();
         }
