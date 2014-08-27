@@ -30,17 +30,19 @@ bool MixHeader::readHeader(std::fstream &fh)
     char flagbuff[6];
     fh.read(flagbuff, 6);
     
-    //std::cout << MixID::idStr(flagbuff, 6) << " Retrieved from header." << std::endl;
+    std::cout << MixID::idStr(flagbuff, 6) << " Retrieved from header." << std::endl;
     
     if(*reinterpret_cast<uint16_t*>(flagbuff)) {
-        if(m_game_type){
-            m_game_type = game_td;
+        if(m_game_type > 1){
+            //m_game_type = game_td;
             std::cout << "Header indicates mix is of type \"game_td\" and will"
                       << " be handled as such." << std::endl;
         }
         
         m_file_count = *reinterpret_cast<uint16_t*>(flagbuff);
         m_body_size = *reinterpret_cast<uint32_t*>(flagbuff + 2);
+        
+        return readUnEncrypted(fh);
         
     } else {
         if(!m_game_type){
@@ -66,8 +68,8 @@ bool MixHeader::readUnEncrypted(std::fstream &fh)
     t_mix_entry entry;
     std::pair<t_mix_index_iter,bool> rv;
     
-    //game_td == 0 get read pointer to correct location
-    if(!m_game_type) { 
+    //new format won't have filecount yet
+    if(m_file_count) { 
         fh.seekg(6, std::ios::beg); 
     } else {
         fh.seekg(4, std::ios::beg);
