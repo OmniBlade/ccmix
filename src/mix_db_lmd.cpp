@@ -94,7 +94,7 @@ bool MixLMD::addName(std::string name)
         return true;
     } else {
         cout << name << " generates an ID conflict with existing entry " << 
-                rv.first->second;
+                rv.first->second << endl;
         return false;
     }
     return false;

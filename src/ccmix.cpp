@@ -32,7 +32,7 @@
 
 #endif
 
-#ifdef WINDOWS
+#ifdef _WIN32
 #define DIR_SEPARATOR '\\'
 #else
 #define DIR_SEPARATOR '/'
@@ -135,6 +135,8 @@ void ShowHelp(TCHAR** argv)
             "--file specifies a single file as the initial file to add to the\n"
             "new mix.\n"
             "--directory specifies an alternative directory to create mix from.\n"
+            "--checksum specifies the mix should have a checksum.\n"
+            "--encrypted specified the mix header should be encrypted.\n"
             "--game specified the game the mix is from, td covers the\n"
             "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
             "expansions. ts covers Tiberian Sun and ra2 covers Red Alert 2/Yuri's "
@@ -144,6 +146,22 @@ void ShowHelp(TCHAR** argv)
             "--game specified the game the mix is from, td covers the\n"
             "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
             "expansions. ts covers Tiberian Sun and Red Alert 2/Yuri's "
+            "Revenge.\n" << endl;
+    cout << "--add\n"
+            "Adds the specified file or mix feature.\n"
+            "--file specifies a single file to add.\n"
+            "--checksum specifies the mix should have a checksum.\n"
+            "--game specified the game the mix is from, td covers the\n"
+            "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
+            "expansions. ts covers Tiberian Sun and ra2 covers Red Alert 2/Yuri's "
+            "Revenge.\n" << endl;
+    cout << "--remove\n"
+            "Removes the specified file or mix feature.\n"
+            "--file specifies a single file to remove.\n"
+            "--checksum specifies the mix should not have a checksum.\n"
+            "--game specified the game the mix is from, td covers the\n"
+            "orignal C&C and Sole Survivor. ra covers Redalert and its\n"
+            "expansions. ts covers Tiberian Sun and ra2 covers Red Alert 2/Yuri's "
             "Revenge.\n" << endl;
 }
 
@@ -215,7 +233,7 @@ string GetHomeDir()
     char* tmp;
     string rv;
     
-    #ifdef WINDOWS
+    #ifdef _WIN32
 
     tmp = getenv("HOMEDRIVE");
     if ( tmp == NULL ) {
@@ -328,7 +346,7 @@ int _tmain(int argc, TCHAR** argv)
             {
                 if (args.OptionArg() != NULL) {
                     input_mixfile = string(args.OptionArg());
-                    cout << "Input mix is " << input_mixfile << endl;
+                    cout << "Operating on " << input_mixfile << endl;
                 } else {
                     _tprintf(_T("--mix option requires a mix file.\n"));
                     return 1;
@@ -480,6 +498,27 @@ int _tmain(int argc, TCHAR** argv)
                 }
             } else {
                 in_file.addFile(file);
+            }
+            
+            return 0;
+            break;
+        }
+        case REMOVE:
+        {
+            MixFile in_file(findGMD(getProgramDir(program_path.c_str()), 
+                            user_home_dir), game);
+
+            if (!in_file.open(input_mixfile)){
+                cout << "Cannot open specified mix file" << endl;
+                return 1;
+            }
+            
+            if(file == ""){
+                if(checksum){
+                    in_file.removeCheckSum();
+                }
+            } else {
+                in_file.removeFile(file);
             }
             
             return 0;

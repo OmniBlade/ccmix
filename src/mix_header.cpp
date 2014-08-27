@@ -254,13 +254,9 @@ bool MixHeader::addEntry(int32_t id, uint32_t size)
     t_mix_entry entry;
     std::pair<t_mix_index_iter,bool> rv;
     
-    std::cout << "Adding entry " << std::hex << id << std::dec << " with size " << size << std::endl;
-    
     info.offset = m_body_size;
     info.size = size;
-    
-    std::cout << "Entry has offset: " << info.offset << " and size " << info.size << std::endl;
-    
+
     entry.first = id;
     entry.second = info;
     

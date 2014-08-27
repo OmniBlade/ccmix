@@ -103,6 +103,12 @@ public:
      */
     bool addCheckSum();
     /**
+     * @brief removes the sha1 checksum to the end of the file and flags it in the
+     *        header.
+     * @return true if successful
+     */
+    bool removeCheckSum();
+    /**
      * @brief checks, if file is present in the archive and adds if not
      * @param name file name
      * @return true if successful

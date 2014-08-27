@@ -174,10 +174,10 @@ bool MixFile::createMix(string fileName, string in_dir,
     if(encrypted) m_header.setIsEncrypted();
     if(checksum) m_header.setHasChecksum();
     
-    cout << "Game we are building for is " << m_header.getGame() << endl;
-    if(m_header.getIsEncrypted()){
-        cout << "We want header encryption." << endl;
-    }
+    //cout << "Game we are building for is " << m_header.getGame() << endl;
+    /*if(m_header.getIsEncrypted()){
+        cout << "Header will be encrypted." << endl;
+    }*/
     
     //make sure we can open the directory
     if((dp = opendir(in_dir.c_str())) == NULL) {
@@ -221,8 +221,7 @@ bool MixFile::createMix(string fileName, string in_dir,
                           m_local_db.getSize());
     }
     
-    cout << m_header.getBodySize() << " files, total size " << m_header.getFileCount() << 
-            " before writing header" << endl;
+    //cout << m_header.getBodySize() << " files, total size " << m_header.getFileCount() << " before writing header" << endl;
     
     //if we are encrypted, get a key source
     if(m_header.getIsEncrypted()){
@@ -231,6 +230,8 @@ bool MixFile::createMix(string fileName, string in_dir,
         if(!m_header.readKeySource(ifile)){
             cout << "Could not open a key_source, encryption disabled" << endl;
             m_header.clearIsEncrypted();
+        } else {
+            cout << "Header will be encrypted" << endl;
         }
         ifile.close();
     }
@@ -250,7 +251,7 @@ bool MixFile::createMix(string fileName, string in_dir,
         return false;
     }
     
-    cout << "Writing the body now" << endl;
+    //cout << "Writing the body now" << endl;
     
     cout << "Writing " << filenames.size() << " files." << endl;
     
@@ -283,7 +284,7 @@ bool MixFile::createMix(string fileName, string in_dir,
         writeCheckSum(fh);
     }
     
-    cout << "Offset to data is " << m_header.getHeaderSize() << endl;
+    //cout << "Offset to data is " << m_header.getHeaderSize() << endl;
     
     fh.close();
     
@@ -297,35 +298,45 @@ bool MixFile::addFile(string name)
     fstream ifh;
     fstream ofh;
     t_index_info lmd;
+    t_index_info old;
+    std::vector<t_index_info> removals;
     std::vector<std::string> filenames; // file names
+    
+    m_skip.clear();
     //int location;
     
     //get filename without path info
     string basename = baseName(name);
     
-    cout << "Trying to add " << basename << endl;
+    cout << "Adding " << basename << endl;
     
     //save the old data offset from header before we started changing it.
     uint32_t old_offset = m_header.getHeaderSize();
     uint32_t old_size = old_offset + m_header.getBodySize();
-    //uint32_t old_end = old_offset + m_header.getBodySize();
     
-    //set up to skip copying the lmd if the mix contains one
     lmd = m_header.getEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()));
+    old = m_header.getEntry(MixID::idGen(m_header.getGame(), basename)); 
     
-    m_header.removeEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()),
-                         true);
+    //add skip entry for lmd if we have one and remove from header
+    if(lmd.size) {
+        m_skip[lmd.offset] = lmd.size;
+        m_header.removeEntry(MixID::idGen(m_header.getGame(), 
+                             m_local_db.getDBName()), true);
+    }
+    
+    //setup to skip over the file if it is replacing
+    if(old.size) {
+        m_skip[old.offset] = old.size;
+        m_header.removeEntry(MixID::idGen(m_header.getGame(), basename), true);
+        cout << "A file with the same ID exists and will be replaced." << endl;
+    }
     
     //stat file to add and check its not a directory
     stat(name.c_str(), &st);
     if(!S_ISDIR(st.st_mode)){
-        if(!m_local_db.addName(basename)) {
-                cout << "Cannot add " << basename << ", ID Collision" << endl;
-                return false;
-        }
+        m_local_db.addName(basename);
         filenames.push_back(basename);
-        m_header.addEntry(MixID::idGen(m_header.getGame(), basename), 
-                          st.st_size);
+        m_header.addEntry(MixID::idGen(m_header.getGame(), basename), st.st_size);
     } else {
         cout << "Cannot add directory as a file" << endl;
         return false;
@@ -333,7 +344,6 @@ bool MixFile::addFile(string name)
     
     //if the lmd had a size before (thus existed), add it back to header now
     if(lmd.size) {
-        cout << "We think we need to re-add an lmd" << endl;
         m_header.addEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()),
                           m_local_db.getSize());
     }
@@ -348,18 +358,17 @@ bool MixFile::addFile(string name)
     //write our new header
     m_header.writeHeader(ofh);
     
-    cout << "We think we have an lmd offset of " << lmd.offset << endl;
-    
-    //copy the body of the old mix, skipping the old lmd
+    //copy the body of the old mix, skipping the old lmd and replaced file
     fh.seekg(old_offset, ios::beg);
-    cout << "lmd offset and old offset = " << lmd.offset + old_offset << endl;
-    while(fh.tellg() < lmd.offset + old_offset){
-        ofh.put(fh.get());
+    
+    if(m_skip.size()){
+        for(t_skip_map_iter it = m_skip.begin(); it != m_skip.end(); it++) {
+            while(fh.tellg() < it->first + old_offset){
+                ofh.put(fh.get());
+            }
+            fh.seekp(old_offset + it->first + it->second);
+        }
     }
-    
-    if(lmd.size) fh.seekg(lmd.size + fh.tellg());
-    
-    cout << "after lmd seek get pos is " << fh.tellg() << endl;
     
     while(fh.tellg() < old_size){
         ofh.put(fh.get());
@@ -390,7 +399,7 @@ bool MixFile::addFile(string name)
         writeCheckSum(ofh, 0);
     }
     
-    //TODO add logic to move new file over the old file
+    //Replace the old file with our new one.
     overWriteOld("~ccmix.tmp");
     
     return true;
@@ -452,7 +461,7 @@ bool MixFile::removeFile(int32_t id)
     fh.seekg(old_offset, ios::beg);
     
     for(t_skip_map_iter it = m_skip.begin(); it != m_skip.end(); it++) {
-        while(fh.tellg() != it->first + old_offset){
+        while(fh.tellg() < it->first + old_offset){
             ofh.put(fh.get());
         }
         fh.seekp(old_offset + it->first + it->second);
@@ -469,7 +478,7 @@ bool MixFile::removeFile(int32_t id)
     
     //write checksum to end of file if required. will have to overwrite old one
     if(m_header.getHasChecksum()){
-        writeCheckSum(ofh, -20);
+        writeCheckSum(ofh, 0);
     }
     
     overWriteOld("~ccmix.tmp");
@@ -492,6 +501,39 @@ bool MixFile::addCheckSum()
     
     //write the actual checksum
     writeCheckSum(fh);
+    
+    return true;
+}
+
+bool MixFile::removeCheckSum()
+{
+    fstream ofh;
+    uint32_t old_offset = m_header.getHeaderSize();
+    uint32_t old_size = old_offset + m_header.getBodySize(); 
+    
+    //check if we think this file is checksummed already
+    if(!m_header.getHasChecksum()){
+        cout << "File is already flagged as not having a checksum" << endl;
+        return false;
+    }
+    
+    ofh.open("~ccmix.tmp", ios::binary|ios::out);
+    if(!ofh.is_open()){
+        cout << "Couldn't open a temporary file to buffer the changes" << endl;
+        return false;
+    }
+    
+    //toggle flag for checksum and then write it
+    m_header.clearHasChecksum();
+    m_header.writeHeader(ofh);
+ 
+    fh.seekg(old_offset, ios::beg);
+    
+    while(fh.tellg() < old_size){
+        ofh.put(fh.get());
+    }
+    
+    overWriteOld("~ccmix.tmp");
     
     return true;
 }
