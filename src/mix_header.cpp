@@ -160,8 +160,9 @@ bool MixHeader::readKeySource(std::fstream& fh)
     //read first 4 bytes, determine if we have keysource mix or not.
     char flagbuff[4];
     fh.read(flagbuff, 4);
+    int32_t flags = *reinterpret_cast<int32_t*>(flagbuff);
     
-    if(!*reinterpret_cast<int32_t*>(flagbuff) & mix_encrypted) {
+    if(flags != mix_encrypted && flags != mix_encrypted + mix_checksum) {
         std::cout << "key_source not suitable." << std::endl;
         return false;
     }
