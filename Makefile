@@ -3,7 +3,7 @@ LIBS=$(OPTLIBS)
 PREFIX?=/usr/local
 CC=g++
 
-SOURCES=$(wildcard src/**/*.cpp src/*.cpp)
+SOURCES=$(wildcard src/*.cpp)
 OBJECTS=$(patsubst %.cpp,%.o,$(SOURCES))
 
 TEST_SRC=$(wildcard tests/*_tests.cpp)
