@@ -40,7 +40,7 @@ void MixGMD::readDB(std::fstream &fh)
 
 void MixGMD::writeDB(std::fstream& fh)
 {
-    for (int i = 0; i < 6; i++){
+    for (unsigned int i = 0; i < m_db_array.size(); i++){
         if (!m_db_array[i]) continue;
         m_db_array[i]->writeDB(fh);
     }

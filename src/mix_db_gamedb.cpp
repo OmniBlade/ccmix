@@ -40,8 +40,11 @@ void MixGameDB::readDB(const char* data, uint32_t offset)
 void MixGameDB::writeDB(std::fstream& fh)
 {
     //first record how many entries we have for this db.
-    fh.write(reinterpret_cast<char*>(m_entries), sizeof(uint32_t));
     
+    if(!fh.is_open()){
+        std::cout << "File not open to write DB\n";
+    }
+    fh.write(reinterpret_cast<char*>(&m_entries), sizeof(uint32_t));
     //filenames
     for(t_id_iter it = m_name_map.begin(); it != m_name_map.end(); ++it) {
         fh.write(it->second.name.c_str(), it->second.name.size() + 1);
@@ -72,6 +75,7 @@ bool MixGameDB::addName(std::string name, std::string description)
     if(rv.second) {
         m_size += name.length() + 1;
         m_size += description.length() + 1;
+        m_entries++;
         return true;
     } else {
         cout << name << " generates an ID conflict with existing entry " << 

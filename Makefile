@@ -13,10 +13,14 @@ TARGET=build/ccmix
 SO_TARGET=$(patsubst %.a,%.so,$(TARGET))
 
 # The Target Build
-all: $(TARGET)
+all: $(TARGET) gmd
 
 dev: CXXFLAGS=-g -Wall -Wexta $(OPTFLAGS)
 dev: all
+	
+gmd: $(OBJECTS) src/gmdedit/gmdedit.o
+	$(CC) src/gmdedit/gmdedit.o src/mixid.o src/mix_db_gamedb.o src/mix_db_gmd.o \
+	-o build/gmdedit
 
 win32:
 	/usr/bin/make -f Makefile.win32 CC=i586-mingw32msvc-g++ \
