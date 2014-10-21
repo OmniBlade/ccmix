@@ -5,6 +5,8 @@
 #include <iostream>
 #include <vector>
 
+const uint32_t REN_SIG = 0x3158494D;
+
 MixHeader::MixHeader(t_game game) :
 mix_checksum(0x00010000),
 mix_encrypted(0x00020000)
@@ -27,6 +29,11 @@ bool MixHeader::readHeader(std::fstream &fh)
     fh.read(flagbuff, 6);
     
     //std::cout << MixID::idStr(flagbuff, 6) << " Retrieved from header." << std::endl;
+    
+    if(*reinterpret_cast<uint32_t*>(flagbuff) == REN_SIG){
+        std::cout << "Error, Renegade mix format not supported." << std::endl;
+        return false;
+    }
     
     if(*reinterpret_cast<uint16_t*>(flagbuff)) {
         if(m_game_type > 1){
