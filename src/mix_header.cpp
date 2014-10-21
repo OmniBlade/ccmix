@@ -16,11 +16,7 @@ mix_encrypted(0x00020000)
     m_has_checksum = 0;
     m_is_encrypted = 0;
     //header will always be at bare min 6 bytes
-    if(game) {
-        m_header_size = 10;
-    } else {
-        m_header_size = 6;
-    }
+    m_header_size = 6;
 }
 
 bool MixHeader::readHeader(std::fstream &fh)
@@ -30,13 +26,13 @@ bool MixHeader::readHeader(std::fstream &fh)
     char flagbuff[6];
     fh.read(flagbuff, 6);
     
-    std::cout << MixID::idStr(flagbuff, 6) << " Retrieved from header." << std::endl;
+    //std::cout << MixID::idStr(flagbuff, 6) << " Retrieved from header." << std::endl;
     
     if(*reinterpret_cast<uint16_t*>(flagbuff)) {
         if(m_game_type > 1){
             //m_game_type = game_td;
-            std::cout << "Header indicates mix is of type \"game_td\" and will"
-                      << " be handled as such." << std::endl;
+            std::cout << "Warning, header indicates mix is of type \"game_td\" "<<
+                    " but isn't what you specified" << std::endl;
         }
         
         m_file_count = *reinterpret_cast<uint16_t*>(flagbuff);
@@ -53,7 +49,8 @@ bool MixHeader::readHeader(std::fstream &fh)
         m_header_flags = *reinterpret_cast<int32_t*>(flagbuff);
         m_has_checksum = m_header_flags & mix_checksum;
         m_is_encrypted = m_header_flags & mix_encrypted;
-        
+        m_header_size += 4; 
+                
         if(m_is_encrypted){
             return readEncrypted(fh);
         } else {
