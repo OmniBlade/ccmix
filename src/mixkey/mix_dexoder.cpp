@@ -6,7 +6,9 @@
  */
 
 #include "mix_dexoder.h"
+#include "cryptopp/integer.h"
 #include <stdio.h>
+#include <iostream>
 
 const char *pubkey_str = "AihRvNoIbTn85FZRYNZRcT+i6KpU+maCsEqr3Q5q+LDB5tH7Tz2qQ38V";
 const char *prvkey_str = "AigKVje8mROcR8QixnxUEF5b29Curkq01DNDWCdOG99XBqH79OaCiTCB";
@@ -299,30 +301,14 @@ static void init_two_dw(bignum n, uint32_t len)
     glob1_bitlen = bitlen_bignum(glob1, len);
     glob1_len_x2 = (glob1_bitlen + 15) / 16;
     mov_bignum(glob1_hi, glob1 + len_bignum(glob1, len) - 2, 2);
-    printf("\nglob1_hi: \n");
-    print_hex((char*)glob1_hi, sizeof(bignum4));
-    printf("\n");
     glob1_hi_bitlen = bitlen_bignum(glob1_hi, 2) - 32;
     shr_bignum(glob1_hi, glob1_hi_bitlen, 2);
-    printf("\nglob1_hi_shr: \n");
-    print_hex((char*)glob1_hi, sizeof(bignum4));
-    printf("\n");
     inv_bignum(glob1_hi_inv, glob1_hi, 2);
-    printf("\nglob1_hi_inv: \n");
-    print_hex((char*)glob1_hi_inv, sizeof(bignum4));
-    printf("\n");
     shr_bignum(glob1_hi_inv, 1, 2);
-    printf("\nglob1_hi_inv_shr: \n");
-    print_hex((char*)glob1_hi_inv, sizeof(bignum4));
-    printf("\n");
     glob1_hi_bitlen = (glob1_hi_bitlen + 15) % 16 + 1;
     inc_bignum(glob1_hi_inv, 2);
-    printf("\nglob1_hi_inv_shr_inc: \n");
-    print_hex((char*)glob1_hi_inv, sizeof(bignum4));
-    printf("\n");
     if (bitlen_bignum(glob1_hi_inv, 2) > 32)
     {
-        printf("More shifting with bitlen being greater than 32");
         shr_bignum(glob1_hi_inv, 1, 2);
         glob1_hi_bitlen--;
     }
@@ -443,7 +429,7 @@ static void calc_a_key(bignum n1, bignum n2, bignum key2, bignum key1, uint32_t 
 {
     bignum n_tmp;
     uint32_t key2_len, key1_len, key2_bitlen, bit_mask;
-
+    
     init_bignum(n1, 1, len);
     key1_len = len_bignum(key1, len);
     init_two_dw(key1, key1_len);
@@ -475,19 +461,24 @@ static void process_predata(const uint8_t* pre, uint32_t pre_len, uint8_t *buf)
 {
     bignum n2, n3;
     const uint32_t a = (pubkey.len - 1) / 8;
-    printf("process_pre, a: %d pre_len: %d\n", a, pre_len);
     while (a + 1 <= pre_len)
     {
         init_bignum(n2, 0, 64);
         memmove(n2, pre, a + 1);
+        
+        //CryptoPP::Integer blk((uint8_t*)n2, a + 1);
+        //std::cout << "pre-enc block\n" << std::hex << blk << "\n";
+        
         calc_a_key(n3, n2, pubkey.key2, pubkey.key1, 64);
-
+        
+        //CryptoPP::Integer blk2((uint8_t*)n3, a);
+        //std::cout << "post-enc block\n" << std::hex << blk2 << "\n\n";
+        
         memmove(buf, n3, a);
 
         pre_len -= a + 1;
         pre += a + 1;
         buf += a;
-        //printf("process_pre, a: %d pre_len: %d\n", a, pre_len);
     }
 }
 
@@ -497,15 +488,13 @@ void get_blowfish_key(const uint8_t* s, uint8_t* d)
     if (!public_key_initialized)
     {
         init_pubkey();
-        printf("Key1 is:\n");
-        print_hex((char*)pubkey.key1, sizeof(bignum));
-        printf("\n");
-        printf("Key2 is:\n");
-        print_hex((char*)pubkey.key2, sizeof(bignum));
-        printf("\n");
         public_key_initialized = true;
-        printf("Key length is: %d\n", pubkey.len);
     }
+    
+    //CryptoPP::Integer pubmod((uint8_t*)pubkey.key1, 40), pubexp((uint8_t*)pubkey.key2, 40);
+    //std::cout << std::hex << pubmod << "\n";
+    //std::cout << std::hex << pubexp << "\n\n";
+    
     uint8_t key[256];
     process_predata(s, len_predata(), key);
     memcpy(d, key, 56);
@@ -518,8 +507,8 @@ void give_blowfish_key(const uint8_t* s, uint8_t* d)
     {
         init_prvkey();
         public_key_initialized = true;
-        printf("Key length is: %d\n", pubkey.len);
     }
+    
     uint8_t key[256];
     process_predata(s, len_predata_gen(), key);
     memcpy(d, key, 80);

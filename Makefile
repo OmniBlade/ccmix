@@ -13,7 +13,7 @@ TARGET=build/ccmix
 SO_TARGET=$(patsubst %.a,%.so,$(TARGET))
 
 # The Target Build
-all: $(TARGET) gmd
+all: $(TARGET) gmd mixkey
 
 dev: CXXFLAGS=-g -Wall -Wexta $(OPTFLAGS)
 dev: all
@@ -22,13 +22,16 @@ gmd: $(OBJECTS) src/gmdedit/gmdedit.o
 	$(CC) src/gmdedit/gmdedit.o src/mixid.o src/mix_db_gamedb.o src/mix_db_gmd.o \
 	-o build/gmdedit
 
+mixkey: src/mixkey/mixkey.o src/mixkey/mix_dexoder.o
+	$(CC) src/mixkey/mixkey.o src/mixkey/mix_dexoder.o -o build/mixkey -lcryptopp
+
 win32:
 	/usr/bin/make -f Makefile.win32 CC=i586-mingw32msvc-g++ \
 	CXX=i586-mingw32msvc-g++
 
 	
 $(TARGET): build $(OBJECTS)
-	$(CC) $(OBJECTS) -o $(TARGET)
+	$(CC) $(OBJECTS) -o $(TARGET) -lcryptopp
 
 build:
 	@mkdir -p build
