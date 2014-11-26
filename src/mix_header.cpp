@@ -1,11 +1,25 @@
 #include "mix_header.h"
-#include "CBlowfish.h"
-#include "mix_dexoder.h"
+
+#include "cryptopp/rsa.h"
+#include "cryptopp/blowfish.h"
+#include "cryptopp/base64.h"
+#include "cryptopp/integer.h"
+#include "cryptopp/osrng.h"
+#include "cryptopp/modes.h"
 
 #include <iostream>
 #include <vector>
 
 const uint32_t REN_SIG = 0x3158494D;
+const char* PUBKEY = "AihRvNoIbTn85FZRYNZRcT+i6KpU+maCsEqr3Q5q+LDB5tH7Tz2qQ38V";
+const char* PRVKEY = "AigKVje8mROcR8QixnxUEF5b29Curkq01DNDWCdOG99XBqH79OaCiTCB";
+const int KEYSIZE = 56;
+
+using CryptoPP::Integer;
+using CryptoPP::Base64Decoder;
+using CryptoPP::RSA;
+using CryptoPP::ECB_Mode;
+using CryptoPP::Blowfish;
 
 MixHeader::MixHeader(t_game game) :
 mix_checksum(0x00010000),
@@ -17,14 +31,14 @@ mix_encrypted(0x00020000)
     m_header_flags = 0;
     m_has_checksum = 0;
     m_is_encrypted = 0;
-    //header will always be at bare min 6 bytes
+    //header will always be at bare min 6 uint8_ts
     m_header_size = 6;
 }
 
 bool MixHeader::readHeader(std::fstream &fh)
 {
     fh.seekg(0, std::ios::beg);
-    //read first 6 bytes, determine if we have td mix or not.
+    //read first 6 uint8_ts, determine if we have td mix or not.
     char flagbuff[6];
     fh.read(flagbuff, 6);
     
@@ -101,33 +115,32 @@ bool MixHeader::readEncrypted(std::fstream& fh)
     t_mix_entry entry;
     std::pair<t_mix_index_iter,bool> rv;
     
-    Cblowfish blfish;
+    ECB_Mode< Blowfish >::Decryption blfish;
     int block_count;
     char pblkbuf[8];
     
-    //header is at least 84 bytes long at this point due to key source
+    //header is at least 84 uint8_ts long at this point due to key source
     m_header_size = 84;
     
     //read keysource to obtain blowfish key
     //fh.seekg(4, std::ios::beg);
     readKeySource(fh);
-    blfish.set_key(reinterpret_cast<uint8_t*>(m_key), 56);
+    blfish.SetKey(reinterpret_cast<uint8_t*>(m_key), 56);
     
     //read first block to get file count, needed to calculate header size
     fh.read(pblkbuf, 8);
-    blfish.decipher(reinterpret_cast<void*>(pblkbuf), 
-                    reinterpret_cast<void*>(pblkbuf), 8);
+    blfish.ProcessString(reinterpret_cast<uint8_t*>(pblkbuf), 8);
     memcpy(reinterpret_cast<char*>(&m_file_count), pblkbuf, 2);
     memcpy(reinterpret_cast<char*>(&m_body_size), pblkbuf + 2 , 4);
     
     //workout size of our header and how much we need to decrypt
-    //take into account 2 bytes left from getting the file count
+    //take into account 2 uint8_ts left from getting the file count
     block_count = ((m_file_count * 12) - 2) / 8;
     if (((m_file_count * 12) - 2) % 8) block_count++;
     //add 8 to compensate for block we already decrypted
     m_header_size += block_count * 8 + 8;
     
-    //prepare our buffer and copy in first 2 bytes we got from first block
+    //prepare our buffer and copy in first 2 uint8_ts we got from first block
     //index_buffer.resize(block_count * 8 + 2);
     char pindbuf[block_count * 8 + 2];
     memcpy(pindbuf, pblkbuf + 6 , 2);
@@ -135,8 +148,7 @@ bool MixHeader::readEncrypted(std::fstream& fh)
     //loop to decrypt index into index buffer
     for(int i = 0; i < block_count; i++) {
         fh.read(pblkbuf, 8);
-        blfish.decipher(reinterpret_cast<void*>(pblkbuf), 
-                    reinterpret_cast<void*>(pblkbuf), 8);
+        blfish.ProcessString(reinterpret_cast<uint8_t*>(pblkbuf), 8);
         memcpy(pindbuf + 2 + 8 * i, pblkbuf, 8);
     }
     
@@ -161,7 +173,7 @@ bool MixHeader::readKeySource(std::fstream& fh)
     if(!fh.is_open()) return false;
     
     fh.seekg(0, std::ios::beg);
-    //read first 4 bytes, determine if we have keysource mix or not.
+    //read first 4 uint8_ts, determine if we have keysource mix or not.
     char flagbuff[4];
     fh.read(flagbuff, 4);
     int32_t flags = *reinterpret_cast<int32_t*>(flagbuff);
@@ -172,9 +184,65 @@ bool MixHeader::readKeySource(std::fstream& fh)
     }
     
     fh.read(m_keysource, 80);
-    get_blowfish_key(reinterpret_cast<uint8_t*>(m_keysource),
-                     reinterpret_cast<uint8_t*>(m_key));
+    //sets the blowfish key from the keysource
+    setKey();
     return true;
+}
+
+void MixHeader::setKey()
+{
+    //need this for cryptopp as it uses bigendian big int, game uses little.
+    //temp buffer to flip the keysource and final key
+    uint8_t keybuf[80];
+    
+    //decode public and private keys and convert to Integer
+    std::string pubkey;
+    std::string prvkey;
+    Base64Decoder decode;
+    decode.Put(reinterpret_cast<const uint8_t*>(PUBKEY), KEYSIZE);
+    pubkey.resize(decode.MaxRetrievable());
+    decode.Get((uint8_t*)pubkey.data(), pubkey.size());
+    decode.Put(reinterpret_cast<const uint8_t*>(PRVKEY), KEYSIZE);
+    prvkey.resize(decode.MaxRetrievable());
+    decode.Get((uint8_t*)prvkey.data(), prvkey.size());
+    pubkey.erase(0, 2);
+    prvkey.erase(0, 2);
+    Integer n((uint8_t*)pubkey.data(), pubkey.size()), 
+            e("0x10001"), 
+            d((uint8_t*)prvkey.data(), prvkey.size());
+    
+    //setup RSA key structure
+    RSA::PrivateKey rsakey;
+    rsakey.Initialize(n, e, d);
+    
+    //reverse endianess of the keysource for cryptopp
+    int i = 0;
+    int j = 79;
+    for(; i < 80; i++) {
+        keybuf[j] = m_keysource[i];
+        j--;
+    }
+    
+    //convert keysource to integers
+    Integer keyblk1(keybuf, 40), keyblk2(keybuf + 40, 40);
+    
+    //decrypt
+    keyblk1 = rsakey.ApplyFunction(keyblk1);
+    keyblk2 = rsakey.ApplyFunction(keyblk2);
+    
+    Integer blowfishint = (keyblk1 << 312) + keyblk2;
+    
+    //encode to bytes
+    blowfishint.Encode(keybuf, 56);
+    
+    //reverse endianess to final key
+    i = 0;
+    j = 55;
+    for(; i < 56; i++)
+    {
+        m_key[i] = keybuf[j];
+        j--;
+    }
 }
 
 bool MixHeader::writeHeader(std::fstream& fh)
@@ -207,7 +275,7 @@ bool MixHeader::writeUnEncrypted(std::fstream& fh)
 
 bool MixHeader::writeEncrypted(std::fstream& fh)
 {
-    Cblowfish blfish;
+    ECB_Mode< Blowfish >::Encryption blfish;
     //std::vector<char> block_buff(8);
     //std::vector<char> index_buffer(8);
     int block_count;
@@ -241,13 +309,14 @@ bool MixHeader::writeEncrypted(std::fstream& fh)
     }
     
     //prepare blowfish
-    blfish.set_key(reinterpret_cast<const uint8_t*>(m_key), 56);
+    blfish.SetKey(reinterpret_cast<uint8_t*>(m_key), 56);
     
     //encrypt and write to file.
     offset = 0;
     while(block_count--){
         memcpy(pblkbuf, pindbuf + offset, 8);
-        blfish.encipher(pblkbuf, pblkbuf, 8);
+        //blfish.encipher(pblkbuf, pblkbuf, 8);
+        blfish.ProcessString(reinterpret_cast<uint8_t*>(pblkbuf), 8);
         fh.write(pblkbuf, 8);
         offset += 8;
     }

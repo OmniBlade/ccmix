@@ -95,11 +95,11 @@ int main(int argc, char* argv[])
     std::stringstream str;
     
     std::cout << "pre-enc cpp block\n" << std::hex << keyblk1 << "\n";
-    Integer dec1 = rsapubKey.ApplyFunction(keyblk1);
+    Integer dec1 = rsaprvKey.ApplyFunction(keyblk1);
     std::cout << std::hex << dec1 << "\n";
     
     std::cout << "pre-enc cpp block\n" << std::hex << keyblk2 << "\n";
-    Integer dec2 = rsapubKey.ApplyFunction(keyblk2);
+    Integer dec2 = rsaprvKey.ApplyFunction(keyblk2);
     std::cout << std::hex << dec2 << "\n\n";
     
     Integer blowfishkey = (dec1 << 312) + dec2;

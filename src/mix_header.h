@@ -109,6 +109,7 @@ public:
     char* getKeySource() { return m_keysource; }
     
 private:
+    void setKey();
     const int32_t mix_checksum;
     const int32_t mix_encrypted;
     
