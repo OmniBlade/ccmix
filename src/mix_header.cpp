@@ -300,9 +300,10 @@ void MixHeader::setKeySource()
         keybuf[i] = m_key[j];
         j--;
     }
-    
+    Integer blowfish((uint8_t*)m_key, 56);
     Integer keyblk1(keybuf, 16), keyblk2(keybuf + 16, 40);
     
+    std::cout << std::hex << blowfish << "\n";
     std::cout << std::hex << keyblk1 << "\n";
     std::cout << std::hex << keyblk2 << "\n";
     
@@ -311,8 +312,8 @@ void MixHeader::setKeySource()
     keyblk2 = rsakey.ApplyFunction(keyblk2);
     
     //buffer the big endian keyblock
-    keyblk2.Encode(keybuf, 40);
     keyblk1.Encode(keybuf, 40);
+    keyblk2.Encode(keybuf + 40, 40);
     
     //reverse endianess of the keysource for the game
     for(int i = 0, j = 79; i < 80; i++) {
