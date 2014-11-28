@@ -110,6 +110,7 @@ public:
     
 private:
     void setKey();
+    void setKeySource();
     const int32_t mix_checksum;
     const int32_t mix_encrypted;
     

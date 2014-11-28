@@ -224,6 +224,7 @@ bool MixFile::createMix(string fileName, string in_dir,
     //cout << m_header.getBodySize() << " files, total size " << m_header.getFileCount() << " before writing header" << endl;
     
     //if we are encrypted, get a key source
+    /*
     if(m_header.getIsEncrypted()){
         ifile.open(key_src.c_str(), ios::binary|ios::in);
         //readKeySource checks if file is actually open
@@ -235,6 +236,7 @@ bool MixFile::createMix(string fileName, string in_dir,
         }
         ifile.close();
     }
+    */
     
     //time to start writing our new file
     fh.open(fileName.c_str(), fstream::in | fstream::out | fstream::binary | 

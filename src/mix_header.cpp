@@ -2,21 +2,24 @@
 
 #include "cryptopp/rsa.h"
 #include "cryptopp/blowfish.h"
-#include "cryptopp/base64.h"
+//#include "cryptopp/base64.h"
 #include "cryptopp/integer.h"
-#include "cryptopp/osrng.h"
 #include "cryptopp/modes.h"
 
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
 #include <vector>
 
 const uint32_t REN_SIG = 0x3158494D;
-const char* PUBKEY = "AihRvNoIbTn85FZRYNZRcT+i6KpU+maCsEqr3Q5q+LDB5tH7Tz2qQ38V";
-const char* PRVKEY = "AigKVje8mROcR8QixnxUEF5b29Curkq01DNDWCdOG99XBqH79OaCiTCB";
+const char* PUBKEY = "0x51bcda086d39fce4565160d651713fa2e8aa54fa6682b04aabdd0e6af8b0c1e6d1fb4f3daa437f15";
+//const char* PUBKEY = "AihRvNoIbTn85FZRYNZRcT+i6KpU+maCsEqr3Q5q+LDB5tH7Tz2qQ38V";
+const char* PRVKEY = "0x0a5637bc99139c47c422c67c54105e5bdbd0aeae4ab4d4334358274e1bdf5706a1fbf4e682893081";
+//const char* PRVKEY = "AigKVje8mROcR8QixnxUEF5b29Curkq01DNDWCdOG99XBqH79OaCiTCB";
 const int KEYSIZE = 56;
 
 using CryptoPP::Integer;
-using CryptoPP::Base64Decoder;
+//using CryptoPP::Base64Decoder;
 using CryptoPP::RSA;
 using CryptoPP::ECB_Mode;
 using CryptoPP::Blowfish;
@@ -33,6 +36,8 @@ mix_encrypted(0x00020000)
     m_is_encrypted = 0;
     //header will always be at bare min 6 uint8_ts
     m_header_size = 6;
+    //seed random number for generating random keys
+    srand(time(NULL));
 }
 
 bool MixHeader::readHeader(std::fstream &fh)
@@ -196,6 +201,7 @@ void MixHeader::setKey()
     uint8_t keybuf[80];
     
     //decode public and private keys and convert to Integer
+    /*
     std::string pubkey;
     std::string prvkey;
     Base64Decoder decode;
@@ -207,13 +213,22 @@ void MixHeader::setKey()
     decode.Get((uint8_t*)prvkey.data(), prvkey.size());
     pubkey.erase(0, 2);
     prvkey.erase(0, 2);
+     * 
     Integer n((uint8_t*)pubkey.data(), pubkey.size()), 
             e("0x10001"), 
             d((uint8_t*)prvkey.data(), prvkey.size());
+     */
+    
+    //setup the key integers for RSA
+    /*
+    Integer n(PUBKEY), 
+            e("0x10001"), 
+            d(PRVKEY);
+     */
     
     //setup RSA key structure
     RSA::PrivateKey rsakey;
-    rsakey.Initialize(n, e, d);
+    rsakey.Initialize(Integer(PUBKEY), Integer("0x10001"), Integer(PRVKEY));
     
     //reverse endianess of the keysource for cryptopp
     int i = 0;
@@ -241,6 +256,67 @@ void MixHeader::setKey()
     for(; i < 56; i++)
     {
         m_key[i] = keybuf[j];
+        j--;
+    }
+}
+
+//This function is called by setEncrypted and generated a new key
+void MixHeader::setKeySource()
+{
+    //buffer for flipping the array
+    uint8_t keybuf[80];
+    uint8_t byte1;
+    uint8_t byte2;
+            
+    //set our private key, this is other way round to decrypting
+    RSA::PrivateKey rsakey;
+    rsakey.Initialize(Integer(PUBKEY), Integer(PRVKEY), Integer("0x10001"));
+    
+    if(m_game_type > game_ra) {
+        byte1 = 0x18;
+        byte2 = 0xBB;
+    } else {
+        byte1 = 0x0C;
+        byte2 = 0x05;
+    }
+    
+    //generate a random blowfish key that mimics the ones WW used
+    //they probably didn't generate them this way
+    for(int i = 0; i < 56; i++) {
+        if(i < 7) {
+            m_key[i] = rand() % 256;
+        } else if (i < 26) {
+            m_key[i] = byte1;
+        } else if (i < 33) {
+            m_key[i] = rand() % 256;
+        } else if (i < 56) {
+            m_key[i] = byte2;
+        }
+    }
+    
+    //reverse endianess for RSA enc
+    for(int i = 0, j = 55; i < 56; i++)
+    {
+        keybuf[i] = m_key[j];
+        j--;
+    }
+    
+    Integer keyblk1(keybuf, 16), keyblk2(keybuf + 16, 40);
+    
+    std::cout << std::hex << keyblk1 << "\n";
+    std::cout << std::hex << keyblk2 << "\n";
+    
+    //encrypt
+    keyblk1 = rsakey.ApplyFunction(keyblk1);
+    keyblk2 = rsakey.ApplyFunction(keyblk2);
+    
+    //buffer the big endian keyblock
+    keyblk2.Encode(keybuf, 40);
+    keyblk1.Encode(keybuf, 40);
+    
+    //reverse endianess of the keysource for the game
+    for(int i = 0, j = 79; i < 80; i++) {
+        m_keysource[j] = keybuf[i];
         j--;
     }
 }
@@ -426,6 +502,7 @@ void MixHeader::setIsEncrypted()
         m_header_size = 84 + block_count * 8;
         m_is_encrypted = true;
         m_header_flags |= mix_encrypted;
+        setKeySource();
     }
 }
 

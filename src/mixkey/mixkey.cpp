@@ -43,6 +43,7 @@ int main(int argc, char* argv[])
     uint8_t deckey[80];
     uint8_t buffer[80];
     uint8_t bfbuf[8];
+    uint8_t keybuf[40];
     char* infile = argv[1];
     AutoSeededRandomPool prng;
     
@@ -67,13 +68,27 @@ int main(int argc, char* argv[])
     prvkey.resize(decode.MaxRetrievable());
     decode.Get((byte*)prvkey.data(), prvkey.size());
     
-    pubkey.erase(0, 2);
-    prvkey.erase(0, 2);
+    pubkey.erase(0,2);
+    prvkey.erase(0,2);
     
     Integer keyblkint(keysource, 80), bfshkeyint(key, 56);
     Integer keyblk1(buffer, 40), keyblk2(buffer + 40, 40);
     std::string keyblk((char*)keysource, 40), bfshkey((char*)key, 56);
     Integer n((byte*)pubkey.data(), pubkey.size()), e("0x10001"), d((byte*)prvkey.data(), prvkey.size());
+    
+    /*
+    n.Encode(keybuf, 40);
+    for(int i = 0; i < 40; i++) {
+        printf("%02x", keybuf[i]);
+    }
+    std::cout << "\n\n";
+     
+    d.Encode(keybuf, 40);
+    for(int i = 0; i < 40; i++) {
+        printf("%02x", keybuf[i]);
+    }
+    std::cout << "\n\n";
+    */
     
     //std::cout << std::dec << n.BitCount() << "\n";
     //std::cout << std::hex << n << "\n";
@@ -94,25 +109,25 @@ int main(int argc, char* argv[])
     
     std::stringstream str;
     
-    std::cout << "pre-enc cpp block\n" << std::hex << keyblk1 << "\n";
+    //std::cout << "pre-enc cpp block\n" << std::hex << keyblk1 << "\n";
     Integer dec1 = rsaprvKey.ApplyFunction(keyblk1);
     std::cout << std::hex << dec1 << "\n";
     
-    std::cout << "pre-enc cpp block\n" << std::hex << keyblk2 << "\n";
+    //std::cout << "pre-enc cpp block\n" << std::hex << keyblk2 << "\n";
     Integer dec2 = rsaprvKey.ApplyFunction(keyblk2);
     std::cout << std::hex << dec2 << "\n\n";
     
     Integer blowfishkey = (dec1 << 312) + dec2;
-    std::cout << std::dec << blowfishkey.BitCount() << "\n";
-    std::cout << std::hex << blowfishkey << "\n";
+    //std::cout << std::dec << blowfishkey.BitCount() << "\n";
+    //std::cout << std::hex << blowfishkey << "\n";
     
     bintTobfish(blowfishkey, nukey);
-    Integer testkey(nukey, 56);
-    std::cout << std::hex << testkey << "\n";
+    //Integer testkey(nukey, 56);
+    //std::cout << std::hex << testkey << "\n";
     
     ECB_Mode< Blowfish >::Decryption bfdecrypt;
     bfdecrypt.SetKey(nukey, 56);
     ifh.read((char*)bfbuf, 8);
     bfdecrypt.ProcessString(bfbuf, 8);
-    std::cout << "Decrypted num of files: " << std::dec << *(int16_t*)bfbuf << "\n";
+    //std::cout << "Decrypted num of files: " << std::dec << *(int16_t*)bfbuf << "\n";
 }
