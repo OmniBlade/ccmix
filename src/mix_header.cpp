@@ -300,12 +300,12 @@ void MixHeader::setKeySource()
         keybuf[i] = m_key[j];
         j--;
     }
-    Integer blowfish((uint8_t*)m_key, 56);
-    Integer keyblk1(keybuf, 16), keyblk2(keybuf + 16, 40);
+    Integer blowfish((uint8_t*)keybuf, 56);
+    Integer keyblk1 = blowfish >> 312;
+    Integer keyblk2 = blowfish - (keyblk1 << 312);
     
+    std::cout << "Generated Blowfish Key:\n";
     std::cout << std::hex << blowfish << "\n";
-    std::cout << std::hex << keyblk1 << "\n";
-    std::cout << std::hex << keyblk2 << "\n";
     
     //encrypt
     keyblk1 = rsakey.ApplyFunction(keyblk1);

@@ -97,7 +97,10 @@ int main(int argc, char* argv[])
     //std::cout << std::dec << d.BitCount() << "\n";
     //std::cout << std::hex << d << "\n\n";
     
-    std::cout << std::hex << bfshkeyint << "\n\n";
+    std::cout << "XCC code blowfish key, encoded part 1 and 2:\n";
+    std::cout << std::hex << bfshkeyint << "\n";
+    std::cout << std::hex << keyblk1 << "\n";
+    std::cout << std::hex << keyblk2 << "\n\n";
     
     AutoSeededRandomPool rng;
     
@@ -111,15 +114,20 @@ int main(int argc, char* argv[])
     
     //std::cout << "pre-enc cpp block\n" << std::hex << keyblk1 << "\n";
     Integer dec1 = rsaprvKey.ApplyFunction(keyblk1);
-    std::cout << std::hex << dec1 << "\n";
+    //std::cout << std::hex << dec1 << "\n";
     
     //std::cout << "pre-enc cpp block\n" << std::hex << keyblk2 << "\n";
     Integer dec2 = rsaprvKey.ApplyFunction(keyblk2);
-    std::cout << std::hex << dec2 << "\n\n";
+    //std::cout << std::hex << dec2 << "\n\n";
     
     Integer blowfishkey = (dec1 << 312) + dec2;
     //std::cout << std::dec << blowfishkey.BitCount() << "\n";
     //std::cout << std::hex << blowfishkey << "\n";
+    
+    std::cout << "RSA blowfish key, decoded part1 and 2:\n";
+    std::cout << std::hex << blowfishkey << "\n";
+    std::cout << std::hex << dec1 << "\n";
+    std::cout << std::hex << dec2 << "\n\n";
     
     bintTobfish(blowfishkey, nukey);
     //Integer testkey(nukey, 56);

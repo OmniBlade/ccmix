@@ -3,3 +3,16 @@ bin
 nbproject/
 *.a
 *.o
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+*.so*
+CPackConfig.cmake
+CPackSourceConfig.cmake
+*.pc*
+*.spec
+*~
+src/config.h
