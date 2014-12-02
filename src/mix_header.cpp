@@ -2,7 +2,6 @@
 
 #include "cryptopp/rsa.h"
 #include "cryptopp/blowfish.h"
-//#include "cryptopp/base64.h"
 #include "cryptopp/integer.h"
 #include "cryptopp/modes.h"
 
@@ -19,7 +18,6 @@ const char* PRVKEY = "0x0a5637bc99139c47c422c67c54105e5bdbd0aeae4ab4d4334358274e
 const int KEYSIZE = 56;
 
 using CryptoPP::Integer;
-//using CryptoPP::Base64Decoder;
 using CryptoPP::RSA;
 using CryptoPP::ECB_Mode;
 using CryptoPP::Blowfish;
@@ -35,7 +33,11 @@ mix_encrypted(0x00020000)
     m_has_checksum = 0;
     m_is_encrypted = 0;
     //header will always be at bare min 6 uint8_ts
-    m_header_size = 6;
+    if(game == game_td) {
+        m_header_size = 6;
+    } else {
+        m_header_size = 10;
+    }
     //seed random number for generating random keys
     srand(time(NULL));
 }
@@ -68,8 +70,7 @@ bool MixHeader::readHeader(std::fstream &fh)
         
     } else {
         if(!m_game_type){
-            std::cout << "Error, game type is td but header is new format." << std::endl;
-            return false;
+            std::cout << "Warning, game type is td but header is new format." << std::endl;
         }
         //lets work out what kind of header we have
         m_header_flags = *reinterpret_cast<int32_t*>(flagbuff);
@@ -305,7 +306,7 @@ void MixHeader::setKeySource()
     Integer keyblk2 = blowfish - (keyblk1 << 312);
     
     std::cout << "Generated Blowfish Key:\n";
-    std::cout << std::hex << blowfish << "\n";
+    std::cout << std::hex << blowfish << std::dec << "\n";
     
     //encrypt
     keyblk1 = rsakey.ApplyFunction(keyblk1);
@@ -371,6 +372,9 @@ bool MixHeader::writeEncrypted(std::fstream& fh)
     if(((m_file_count * 12) + 6) % 8) block_count++;
     //index_buffer.resize(block_count * 8);
     char pindbuf[block_count * 8];
+    
+    //this needs to be here for checksum when encrypted
+    m_header_size = 84 + block_count * 8;
     
     //fill the buffer
     memcpy(pindbuf + offset, reinterpret_cast<char*>(&m_file_count), 2);
