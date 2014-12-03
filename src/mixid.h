@@ -1,10 +1,3 @@
-/* 
- * File:   mixid.h
- * Author: Aidan Richmond
- * Based On: Ccrc.h by Olaf Van Der Spek
- *
- */
-
 #ifndef MIXID_H
 #define	MIXID_H
 

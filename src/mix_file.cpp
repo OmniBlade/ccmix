@@ -1,4 +1,3 @@
-//#include "sha1.h"
 #include "mix_file.h"
 #include "cryptopp/sha.h"
 #include "cryptopp/integer.h"

@@ -47,12 +47,10 @@ SET(CCMIX_SRC
     ${PROJECT_SRC_DIR}/mix_db_lmd.cpp
     ${PROJECT_SRC_DIR}/mix_file.cpp
     ${PROJECT_SRC_DIR}/mix_header.cpp
-    ${PROJECT_SRC_DIR}/sha1.cpp
    )
 
 SET(GMDEDIT_SRC
-    ${PROJECT_SRC_DIR}/gmdedit/gmdedit.cpp
-    
+    ${PROJECT_SRC_DIR}/gmdedit/gmdedit.cpp 
    )
 
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CCMIX_BINARY_DIR}/lib)

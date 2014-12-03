@@ -1,10 +1,3 @@
-/* 
- * File:   Ccrc.cpp
- * Author: Olaf van der Spek
- * 
- * Created on 29. prosinec 2011, 14:22
- */
-
 #include "mixid.h"
 #include <cstring>
 #include <sstream>
@@ -82,7 +75,7 @@ namespace MixID
                 for (int j = 0; j < 4; j++) {
                     a >>= 8;
                     if (i < l)
-                        a += static_cast<uint32_t> (fname[i]) << 24;
+                        a += static_cast<uint32_t>(fname[i]) << 24;
                     i++;
                 }
                 id = (id << 1 | id >> 31) + a;
@@ -126,7 +119,7 @@ namespace MixID
     
     int32_t strId(std::string hex)
     {
-        uint32_t rv;   
+        int32_t rv;   
         std::stringstream ss;
         ss << std::hex << hex;
         ss >> rv;

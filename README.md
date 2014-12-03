@@ -1,7 +1,7 @@
 ccmix
 =====
 
-Fork of http://code.google.com/p/tsunmix/
+Based on http://code.google.com/p/tsunmix/
 
 Overview
 ========
@@ -11,7 +11,7 @@ ccmix is a command line tool to create and extract from archive files in the Wes
 Useage
 ======
 
-Generally the useage is of the form ccmix --mode --mix /path/to/file.mix with various options available that alter the progams behaviour when creating or extracting files. The currently supported modes are as follows:
+Generally the usage is of the form ccmix --mode --mix /path/to/file.mix with various options available that alter the progams behaviour when creating or extracting files. The currently supported modes are as follows:
 
 --extract
 
@@ -25,6 +25,14 @@ This will create a mix file from the contents of a directory. Currently requires
 
 This will list the contents of a mix file. Requires the --mix options.
 
+--add
+
+This will attempt to rebuild a mix file and add the requested file.
+
+--delete
+
+This will attempt to rebuild the mix file and remove the requested file.
+
 The following options can also be used.
 
 --file /path/to/file.name
@@ -35,9 +43,17 @@ Specifies a specific file to extract.
 
 Specifies a folder to extract to, or the contents of which to make a .mix from.
 
+--game
+
+Can be td, ra, ts or ra2. Specifies which game the mix being operated on is for. td covers Sole Survivor as well as C&C and ra2 covers Yuri's Revenge. If not specified, ccmix defaults to td.
+
 --encrypt
 
-Used when creating a file, encrypts the header with blowfish. Key source is generated from rand().
+Used when creating a file, encrypts the header with blowfish. Key is partly generated from rand(). Requires --game ra or later.
+
+--checksum
+
+Used to include a SHA1 checksum, when set, the game will use this to verify the mix file contents and refuse to load if it doesn't match. Requires --game ra or later.
 
 --lmd
 
@@ -47,3 +63,5 @@ Acknowledgements
 ================
 ivosh-l author of tsunmix on which ccmix is based.
 Olaf van der Spek for his work reverse engineering the C&C files formats and the tools he has developed over the years to allow modding these classic games.
+Joe Bostic and CCHyper for pointing me at the reference source the header encryption is based upon.
+The authors of the Crypto++ library ccmix now makes use of for handling the header encryption and SHA1 checksumming.
