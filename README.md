@@ -8,7 +8,7 @@ Overview
 
 ccmix is a command line tool to create and extract from archive files in the Westwood Studios .mix format. The tool can create any of the 3 main varients used in classic Westwood games. These are Tiberian Dawn versions, Red Alert versions with both encrypted and unencrypted file headers and Tiberian Sun versions with encrypted and unencrypted file headers. It also optionally adds the XCC extension of including a local filenames database to allow recovery of filenames from the one way hash they are stored as.
 
-Useage
+Usage
 ======
 
 Generally the usage is of the form ccmix --mode --mix /path/to/file.mix with various options available that alter the progams behaviour when creating or extracting files. The currently supported modes are as follows:
@@ -62,6 +62,9 @@ Specifies if a local mix database.dat file following the XCC format should be ge
 Acknowledgements
 ================
 ivosh-l author of tsunmix on which ccmix is based.
+
 Olaf van der Spek for his work reverse engineering the C&C files formats and the tools he has developed over the years to allow modding these classic games.
+
 Joe Bostic and CCHyper for pointing me at the reference source the header encryption is based upon.
+
 The authors of the Crypto++ library ccmix now makes use of for handling the header encryption and SHA1 checksumming.
