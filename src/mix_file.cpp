@@ -1,4 +1,11 @@
 #include "mix_file.h"
+
+#ifdef _MSC_VER
+
+#include <Windows.h>
+
+#endif
+
 #include "cryptopp/sha.h"
 #include "cryptopp/integer.h"
 #include <iostream>
@@ -536,8 +543,9 @@ bool MixFile::removeCheckSum()
 bool MixFile::writeCheckSum(fstream &fh, int32_t pos) 
 {
     SHA1 sha1;
-    const size_t BufferSize = 144*7*1024; 
-    uint8_t buffer[144*7*1024];
+    const size_t BufferSize = 144*7*1024;
+	std::vector<uint8_t> bufvector(144*7*1024);
+    uint8_t* buffer = &bufvector.at(0);
     //int blocks = mix_head.size / BufferSize;
     //int rem = mix_head.size % BufferSize;
     uint8_t hash[20];

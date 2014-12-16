@@ -1,5 +1,11 @@
 #include "mix_header.h"
 
+#ifdef _MSC_VER
+
+#include <Windows.h>
+
+#endif
+
 #include "cryptopp/rsa.h"
 #include "cryptopp/blowfish.h"
 #include "cryptopp/integer.h"
@@ -148,7 +154,8 @@ bool MixHeader::readEncrypted(std::fstream& fh)
     
     //prepare our buffer and copy in first 2 uint8_ts we got from first block
     //index_buffer.resize(block_count * 8 + 2);
-    char pindbuf[block_count * 8 + 2];
+	std::vector<char> indbuf(block_count * 8 + 2);
+    char* pindbuf = &indbuf.at(0);
     memcpy(pindbuf, pblkbuf + 6 , 2);
     
     //loop to decrypt index into index buffer
@@ -371,7 +378,9 @@ bool MixHeader::writeEncrypted(std::fstream& fh)
     block_count = ((m_file_count * 12) + 6) / 8;
     if(((m_file_count * 12) + 6) % 8) block_count++;
     //index_buffer.resize(block_count * 8);
-    char pindbuf[block_count * 8];
+	std::vector<char> indbuf(block_count * 8);
+    char* pindbuf = &indbuf.at(0);
+    //char pindbuf[block_count * 8];
     
     //this needs to be here for checksum when encrypted
     m_header_size = 84 + block_count * 8;
