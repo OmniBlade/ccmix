@@ -38,12 +38,7 @@ mix_encrypted(0x00020000)
     m_header_flags = 0;
     m_has_checksum = 0;
     m_is_encrypted = 0;
-    //header will always be at bare min 6 uint8_ts
-    if(game == game_td) {
-        m_header_size = 6;
-    } else {
-        m_header_size = 10;
-    }
+    m_header_size = 0;
     //seed random number for generating random keys
     srand(time(NULL));
 }
@@ -82,7 +77,6 @@ bool MixHeader::readHeader(std::fstream &fh)
         m_header_flags = *reinterpret_cast<int32_t*>(flagbuff);
         m_has_checksum = m_header_flags & mix_checksum;
         m_is_encrypted = m_header_flags & mix_encrypted;
-        m_header_size += 4; 
                 
         if(m_is_encrypted){
             return readEncrypted(fh);
@@ -101,10 +95,12 @@ bool MixHeader::readUnEncrypted(std::fstream &fh)
     //new format won't have filecount yet
     if(m_file_count) { 
         fh.seekg(6, std::ios::beg); 
+        m_header_size = 6;
     } else {
         fh.seekg(4, std::ios::beg);
         fh.read(reinterpret_cast<char*>(&m_file_count), sizeof(uint16_t));
         fh.read(reinterpret_cast<char*>(&m_body_size), sizeof(uint32_t));
+        m_header_size = 10;
     }
     
     m_header_size += m_file_count * 12;
