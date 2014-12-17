@@ -102,6 +102,7 @@ public:
     
     uint32_t getHeaderSize() { return m_header_size; }
     uint32_t getBodySize() { return m_body_size; }
+    void setBodySize(uint32_t size) { m_body_size = size; }
     uint16_t getFileCount() { return m_file_count; }
     t_mix_index_iter getBegin() { return m_index.begin(); }
     t_mix_index_iter getEnd() { return m_index.end(); }

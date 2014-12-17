@@ -70,6 +70,7 @@ bool MixFile::open(const string path)
 {
     t_index_info lmd;
     m_file_path = path;
+    int32_t fsize;
     
     if (fh.is_open())
         close();
@@ -80,19 +81,28 @@ bool MixFile::open(const string path)
         return false;
     }
     
-    if(!m_header.readHeader(fh)) {
+    fh.seekg(0, ios::end);
+    fsize = fh.tellg();
+    fh.seekg(0, ios::beg);
+    
+    if (!m_header.readHeader(fh)) {
         return false;
     }
     
-    if(m_header.getHasChecksum()) {
+    if (m_header.getBodySize() >= fsize - m_header.getHeaderSize()) {
+        m_header.setBodySize(fsize - m_header.getHeaderSize());
+    }
+    
+    if (m_header.getHasChecksum()) {
         fh.seekg(-20, ios::end);
         fh.read(reinterpret_cast<char*>(m_checksum), 20);
     }
     
-    //check if we have a local mix db
+    //check if we have a local mix db and if its sane-ish
     lmd = m_header.getEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()));
-    if(lmd.size){
+    if (lmd.size < m_header.getBodySize()) {
         m_local_db.readDB(fh, lmd.offset + m_header.getHeaderSize(), lmd.size);
+        m_has_lmd = true;
     }
     
     return true;
@@ -119,11 +129,12 @@ bool MixFile::extractAll(string outPath)
             fname = m_global_db.getName(m_header.getGame(), it->first);
         }
         
-        rv = extractFile(it->first, outPath + DIR_SEPARATOR + fname);
-        
-        if(!rv) return rv;
+        if (it->second.size <= m_header.getBodySize()) {
+            rv = extractFile(it->first, outPath + DIR_SEPARATOR + fname);
+        }
     }
-    return true;
+    
+    return rv;
 }
 
 bool MixFile::extractFile(int32_t id, string out) 

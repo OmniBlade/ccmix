@@ -16,7 +16,7 @@ typedef enum
     game_ts,
     game_dune2,
     game_dune2000,
-    game_ra2,
+    game_ra2
 } t_game;
 
 namespace MixID
