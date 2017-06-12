@@ -1,17 +1,16 @@
-/* 
- * File:   mix_file.cpp
- * Author: ivosh-l
- * 
- * Created on 29. prosinec 2011, 11:32
- */
-
-#include "sha1.h"
 #include "mix_file.h"
+
+#ifdef _MSC_VER
+
+#include <Windows.h>
+
+#endif
+
+#include "cryptopp/sha.h"
+#include "cryptopp/integer.h"
 #include <iostream>
-//#include "mixid.h"
 #include <iomanip>
 #include <algorithm>
-//#include <cctype>
 
 #ifdef _MSC_VER
 #include "win32/dirent.h"
@@ -23,6 +22,7 @@
 #include <sys/types.h>
 
 using namespace std;
+using CryptoPP::SHA1;
 
 #ifdef _WIN32
 
@@ -70,6 +70,7 @@ bool MixFile::open(const string path)
 {
     t_index_info lmd;
     m_file_path = path;
+    int32_t fsize;
     
     if (fh.is_open())
         close();
@@ -80,19 +81,28 @@ bool MixFile::open(const string path)
         return false;
     }
     
-    if(!m_header.readHeader(fh)) {
+    fh.seekg(0, ios::end);
+    fsize = fh.tellg();
+    fh.seekg(0, ios::beg);
+    
+    if (!m_header.readHeader(fh)) {
         return false;
     }
     
-    if(m_header.getHasChecksum()) {
+    if (m_header.getBodySize() >= fsize - m_header.getHeaderSize()) {
+        m_header.setBodySize(fsize - m_header.getHeaderSize());
+    }
+    
+    if (m_header.getHasChecksum()) {
         fh.seekg(-20, ios::end);
         fh.read(reinterpret_cast<char*>(m_checksum), 20);
     }
     
-    //check if we have a local mix db
+    //check if we have a local mix db and if its sane-ish
     lmd = m_header.getEntry(MixID::idGen(m_header.getGame(), m_local_db.getDBName()));
-    if(lmd.size){
+    if (lmd.size < m_header.getBodySize()) {
         m_local_db.readDB(fh, lmd.offset + m_header.getHeaderSize(), lmd.size);
+        m_has_lmd = true;
     }
     
     return true;
@@ -119,11 +129,12 @@ bool MixFile::extractAll(string outPath)
             fname = m_global_db.getName(m_header.getGame(), it->first);
         }
         
-        rv = extractFile(it->first, outPath + DIR_SEPARATOR + fname);
-        
-        if(!rv) return rv;
+        if (it->second.size <= m_header.getBodySize()) {
+            rv = extractFile(it->first, outPath + DIR_SEPARATOR + fname);
+        }
     }
-    return true;
+    
+    return rv;
 }
 
 bool MixFile::extractFile(int32_t id, string out) 
@@ -224,6 +235,7 @@ bool MixFile::createMix(string fileName, string in_dir,
     //cout << m_header.getBodySize() << " files, total size " << m_header.getFileCount() << " before writing header" << endl;
     
     //if we are encrypted, get a key source
+    /*
     if(m_header.getIsEncrypted()){
         ifile.open(key_src.c_str(), ios::binary|ios::in);
         //readKeySource checks if file is actually open
@@ -235,6 +247,7 @@ bool MixFile::createMix(string fileName, string in_dir,
         }
         ifile.close();
     }
+    */
     
     //time to start writing our new file
     fh.open(fileName.c_str(), fstream::in | fstream::out | fstream::binary | 
@@ -541,27 +554,28 @@ bool MixFile::removeCheckSum()
 bool MixFile::writeCheckSum(fstream &fh, int32_t pos) 
 {
     SHA1 sha1;
-    const size_t BufferSize = 144*7*1024; 
-    char* buffer = new char[BufferSize];
+    const size_t BufferSize = 144*7*1024;
+	std::vector<uint8_t> bufvector(144*7*1024);
+    uint8_t* buffer = &bufvector.at(0);
     //int blocks = mix_head.size / BufferSize;
     //int rem = mix_head.size % BufferSize;
-    uint8_t* hash;
+    uint8_t hash[20];
     ofstream testout;
     
     //read data into sha1 algo from dataoffset
     fh.seekg(m_header.getHeaderSize(), ios::beg);
     
-    while(!fh.eof()) {
-        fh.read(buffer, BufferSize);
+    while(!fh.eof()) {//#include "MixData.h"
+        fh.read(reinterpret_cast<char*>(buffer), BufferSize);
         std::size_t numBytesRead = size_t(fh.gcount());
-        sha1.addBytes(buffer, numBytesRead);
+        sha1.Update(buffer, numBytesRead);
     }
     
     //clear stream
     fh.clear();
     
     // get our hash and print it to console as well
-    hash = sha1.getDigest();
+    sha1.Final(hash);
     cout << "Checksum is "
     << MixID::idStr(reinterpret_cast<char*>(hash), 20);
     cout << endl;
@@ -570,8 +584,7 @@ bool MixFile::writeCheckSum(fstream &fh, int32_t pos)
     fh.seekp(pos, ios::end);
     fh.write(reinterpret_cast<const char*>(hash), 20);
     
-    delete[] buffer;
-    free(hash);
+    //delete[] buffer;
     
     return false;
 }

@@ -26,14 +26,15 @@ void MixGMD::readDB(std::fstream &fh)
     offset = 0;
     
     //read file into data buffer
-    char data[size];
+    //char data[size];
+	std::vector<char> data(size);
 
     fh.seekg(0, std::ios::beg);
-    fh.read(data, size);
+    fh.read(&data.at(0), size);
     
     // read file from buffer into respective dbs
     for (uint32_t i = 0; i < m_db_array.size(); i++){
-        m_db_array[i]->readDB(data, offset);
+        m_db_array[i]->readDB(&data.at(0), offset);
         offset += m_db_array[i]->getSize();
     }
 }

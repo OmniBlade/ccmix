@@ -1,10 +1,3 @@
-/* 
- * File:   mix_file.h
- * Author: ivosh-l
- *
- * Created on 29. prosinec 2011, 11:32
- */
-
 #ifndef MIX_FILE_H
 #define	MIX_FILE_H
 #include "mix_db_gmd.h"
@@ -14,7 +7,6 @@
 #include <fstream>
 #include <vector>
 #include <map>
-//#include "MixData.h"
 
 #ifdef _MSC_VER
 #include "win32/stdint.h"
