@@ -46,7 +46,7 @@ mix_encrypted(0x00020000)
 bool MixHeader::readHeader(std::fstream &fh)
 {
     fh.seekg(0, std::ios::beg);
-    //read first 6 uint8_ts, determine if we have td mix or not.
+    //read first 6 bytes, determine if we have td mix or not.
     char flagbuff[6];
     fh.read(flagbuff, 6);
     
@@ -127,7 +127,7 @@ bool MixHeader::readEncrypted(std::fstream& fh)
     int block_count;
     char pblkbuf[8];
     
-    //header is at least 84 uint8_ts long at this point due to key source
+    //header is at least 84 bytes long at this point due to key source
     m_header_size = 84;
     
     //read keysource to obtain blowfish key
@@ -142,13 +142,13 @@ bool MixHeader::readEncrypted(std::fstream& fh)
     memcpy(reinterpret_cast<char*>(&m_body_size), pblkbuf + 2 , 4);
     
     //workout size of our header and how much we need to decrypt
-    //take into account 2 uint8_ts left from getting the file count
+    //take into account 2 bytes left from getting the file count
     block_count = ((m_file_count * 12) - 2) / 8;
     if (((m_file_count * 12) - 2) % 8) block_count++;
     //add 8 to compensate for block we already decrypted
     m_header_size += block_count * 8 + 8;
     
-    //prepare our buffer and copy in first 2 uint8_ts we got from first block
+    //prepare our buffer and copy in first 2 bytes we got from first block
     //index_buffer.resize(block_count * 8 + 2);
 	std::vector<char> indbuf(block_count * 8 + 2);
     char* pindbuf = &indbuf.at(0);
@@ -182,7 +182,7 @@ bool MixHeader::readKeySource(std::fstream& fh)
     if(!fh.is_open()) return false;
     
     fh.seekg(0, std::ios::beg);
-    //read first 4 uint8_ts, determine if we have keysource mix or not.
+    //read first 4 bytes, determine if we have keysource mix or not.
     char flagbuff[4];
     fh.read(flagbuff, 4);
     int32_t flags = *reinterpret_cast<int32_t*>(flagbuff);
